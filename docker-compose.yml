@@ -1,0 +1,137 @@
+services:
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: game_store_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-game_store_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-game_store_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-game_store_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d   # optional: auto-run SQL scripts on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-game_store_user} -d ${POSTGRES_DB:-game_store_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - game_store_network
+
+  # ─────────────────────────────────────────
+  # Redis (Message Broker for Celery)
+  # ─────────────────────────────────────────
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: gamestore_redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${REDIS_PORT:-6379}:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - gamestore_network
+
+  # ─────────────────────────────────────────
+  # FastAPI Backend (uncomment when ready)
+  # ─────────────────────────────────────────
+  # backend:
+  #   build:
+  #     context: ./be-dashboard
+  #     dockerfile: Dockerfile
+  #   container_name: gamestore_backend
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-gamestore_user}:${POSTGRES_PASSWORD:-gamestore_pass}@postgres:5432/${POSTGRES_DB:-gamestore_db}
+  #     REDIS_URL: redis://redis:6379/0
+  #   ports:
+  #     - "${BACKEND_PORT:-8000}:8000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - gamestore_network
+
+  # ─────────────────────────────────────────
+  # Celery Worker (uncomment when ready)
+  # ─────────────────────────────────────────
+  # celery_worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: gamestore_celery_worker
+  #   restart: unless-stopped
+  #   command: celery -A app.celery_app worker --loglevel=info
+  #   env_file: .env
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-gamestore_user}:${POSTGRES_PASSWORD:-gamestore_pass}@postgres:5432/${POSTGRES_DB:-gamestore_db}
+  #     REDIS_URL: redis://redis:6379/0
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - gamestore_network
+
+  # ─────────────────────────────────────────
+  # Celery Beat Scheduler (uncomment when ready)
+  # ─────────────────────────────────────────
+  # celery_beat:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: gamestore_celery_beat
+  #   restart: unless-stopped
+  #   command: celery -A app.celery_app beat --loglevel=info
+  #   env_file: .env
+  #   depends_on:
+  #     - celery_worker
+  #   networks:
+  #     - gamestore_network
+
+  # ─────────────────────────────────────────
+  # React Frontend (uncomment when ready)
+  # ─────────────────────────────────────────
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: gamestore_frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${FRONTEND_PORT:-3000}:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - gamestore_network
+
+# ─────────────────────────────────────────
+# Named Volumes
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ─────────────────────────────────────────
+# Network
+# ─────────────────────────────────────────
+networks:
+  game_store_network:
+    driver: bridge
+    name: game_store_network

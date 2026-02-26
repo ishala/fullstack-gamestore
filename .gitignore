@@ -1,0 +1,23 @@
+# Frontend
+fe-dashboard/node_modules
+fe-dashboard/dist
+fe-dashboard/.env
+fe-dashboard/.env.local
+fe-dashboard/build
+
+# Backend
+be-dashboard/__pycache__/
+be-dashboard/**/__pycache__/
+be-dashboard/**/*.pyc
+be-dashboard/**/*.pyo
+be-dashboard/alembic/**/__pycache__/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

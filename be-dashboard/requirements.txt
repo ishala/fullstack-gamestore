@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────
+# Web Framework
+# ─────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# ─────────────────────────────────────────
+# Database
+# ─────────────────────────────────────────
+sqlalchemy==2.0.35
+asyncpg==0.29.0          # async PostgreSQL driver (SQLAlchemy async)
+psycopg2-binary==2.9.9   # sync driver (dipakai Alembic)
+alembic==1.13.3
+
+# ─────────────────────────────────────────
+# Validation
+# ─────────────────────────────────────────
+pydantic==2.9.2
+pydantic-settings==2.5.2  # untuk load .env ke Settings
+
+# ─────────────────────────────────────────
+# Celery + Redis
+# ─────────────────────────────────────────
+celery==5.4.0
+redis==5.1.1
+flower==2.0.1             # monitoring Celery (opsional)
+
+# ─────────────────────────────────────────
+# HTTP Client (konsumsi API publik)
+# ─────────────────────────────────────────
+httpx==0.27.2             # async HTTP client
+
+# ─────────────────────────────────────────
+# Utilities
+# ─────────────────────────────────────────
+python-dotenv==1.0.1
