@@ -109,10 +109,11 @@ const mockData = [
 const COLUMNS = [
   { key: "name", label: "Name" },
   { key: "genre", label: "Genre" },
-  { key: "releaseDate", label: "Release Date" },
+  { key: "releaseDate", label: "Release Date"},
   { key: "platform", label: "Platform" },
-  { key: "cheapest", label: "Deal" },
+  { key: "our_price", label: "Store Price" },
   { key: "rating", label: "Rating" },
+  { key: "cheapest", label: "Deal" },
 ];
 
 export {
