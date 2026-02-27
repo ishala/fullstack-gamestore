@@ -1,19 +1,9 @@
 import PropTypes from "prop-types";
 import { EditButton, DeleteButton } from "./Buttons/ActionButtons";
+import RatingBadge from "./RatingBadge";
 
-const RatingBadge = ({ value }) => {
-  const color =
-    value >= 9
-      ? "text-emerald-600"
-      : value >= 7
-        ? "text-yellow-500"
-        : "text-red-500";
-  return (
-    <span className={`font-bold text-sm ${color}`}>★ {value.toFixed(1)}</span>
-  );
-};
 
-function TableBody({ filteredData, handleDelete }) {
+function TableBody({ filteredData, handleDelete, priceKey = "cheapest" }) {
   return (
     <tbody className="divide-y divide-gray-100">
       {filteredData.length === 0 ? (
@@ -30,7 +20,7 @@ function TableBody({ filteredData, handleDelete }) {
               <span className="font-medium text-gray-800">{game.name}</span>
             </td>
             <td className="px-4 py-3">
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium">
+              <span className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1 rounded-md">
                 {game.genre}
               </span>
             </td>
@@ -38,7 +28,7 @@ function TableBody({ filteredData, handleDelete }) {
             <td className="px-4 py-3 text-gray-600 text-xs">{game.platform}</td>
             <td className="px-4 py-3">
               <span className="font-semibold text-emerald-600">
-                {game.cheapest}
+                {game[priceKey]}
               </span>
             </td>
             <td className="px-4 py-3">
@@ -60,10 +50,7 @@ function TableBody({ filteredData, handleDelete }) {
 TableBody.propTypes = {
   filteredData: PropTypes.arrayOf(PropTypes.object),
   handleDelete: PropTypes.func.isRequired,
-};
-
-RatingBadge.propTypes = {
-  value: PropTypes.number,
+  priceKey: PropTypes.string.isRequired
 };
 
 export default TableBody;
