@@ -338,6 +338,14 @@ function MyStorePage() {
                     #
                   </th>
                   <TableHeader
+                    key="created_at"
+                    col="created_at"
+                    label="Tanggal Ditambahkan"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    handleSort={handleSort}
+                  />
+                  <TableHeader
                     key="game_name"
                     col="game_name"
                     label="Nama Game"
@@ -372,7 +380,7 @@ function MyStorePage() {
                   name: "game_name",
                   genre: "game_genre",
                 }}
-                columns={["name", "genre", "price"]}
+                columns={["created_at","name", "genre", "price"]}
                 editingId={editingId}
                 editPrice={editPrice}
                 setEditPrice={setEditPrice}
