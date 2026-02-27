@@ -1,14 +1,22 @@
 import PropTypes from "prop-types";
 import { EditButton, DeleteButton } from "./Buttons/ActionButtons";
 import RatingBadge from "./RatingBadge";
+import dayjs from "dayjs";
 
+function TableBody({ filteredData, handleDelete, priceKey = "price_cheap" }) {
+  const formatPrice = (val) =>
+    val != null ? `$${Number(val).toFixed(2)}` : "-";
 
-function TableBody({ filteredData, handleDelete, priceKey = "cheapest" }) {
+  const formatDate = (val) => {
+    if (!val) return "-";
+    return dayjs(val).format("DD MMM YYYY");
+  };
+
   return (
     <tbody className="divide-y divide-gray-100">
       {filteredData.length === 0 ? (
         <tr>
-          <td colSpan={8} className="text-center py-12 text-gray-400">
+          <td colSpan={7} className="text-center py-12 text-gray-400">
             Tidak ada data ditemukan.
           </td>
         </tr>
@@ -17,19 +25,25 @@ function TableBody({ filteredData, handleDelete, priceKey = "cheapest" }) {
           <tr key={game.id} className="hover:bg-gray-50 transition-colors">
             <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
             <td className="px-4 py-3">
-              <span className="font-medium text-gray-800">{game.name}</span>
+              <span className="font-medium text-gray-800">{game.name ?? "-"}</span>
             </td>
             <td className="px-4 py-3">
               <span className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1 rounded-md">
-                {game.genre}
+                {game.genre ?? "-"}
               </span>
             </td>
-            <td className="px-4 py-3 text-gray-600">{game.releaseDate}</td>
-            <td className="px-4 py-3 text-gray-600 text-xs">{game.platform}</td>
+            <td className="px-4 py-3 text-gray-600">
+              {formatDate(game.released)}
+            </td>
             <td className="px-4 py-3">
               <span className="font-semibold text-emerald-600">
-                {game[priceKey]}
+                {formatPrice(game[priceKey])}
               </span>
+              {/* {game.price_external != null && (
+                <span className="ml-1.5 text-xs text-gray-400 line-through">
+                  {formatPrice(game.price_external)}
+                </span>
+              )} */}
             </td>
             <td className="px-4 py-3">
               <RatingBadge value={game.rating} />
@@ -37,7 +51,10 @@ function TableBody({ filteredData, handleDelete, priceKey = "cheapest" }) {
             <td className="px-4 py-3">
               <div className="flex items-center justify-center gap-2">
                 <EditButton />
-                <DeleteButton handleDelete={handleDelete} gameId={Number(game.id)} />
+                <DeleteButton
+                  handleDelete={handleDelete}
+                  gameId={Number(game.id)}
+                />
               </div>
             </td>
           </tr>
@@ -50,7 +67,7 @@ function TableBody({ filteredData, handleDelete, priceKey = "cheapest" }) {
 TableBody.propTypes = {
   filteredData: PropTypes.arrayOf(PropTypes.object),
   handleDelete: PropTypes.func.isRequired,
-  priceKey: PropTypes.string.isRequired
+  priceKey: PropTypes.string.isRequired,
 };
 
 export default TableBody;
