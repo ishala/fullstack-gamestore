@@ -1,32 +1,58 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import SearchField from "../components/SearchField";
 import TableHeader from "../components/TableHeader";
 import TableBody from "../components/TableBody";
-import { mockData, COLUMNS } from "../utils/local-data";
 import { useSort } from "../hooks/useSort";
+import {
+  fetchGames,
+  fetchSales,
+  createSale,
+  deleteSale,
+} from "../utils/network-data";
 
 function MyStorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [price, setPrice] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
-  const [storeGames, setStoreGames] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const { sortKey, sortDir, handleSort, applySorting } = useSort("name", "asc");
+  // Hasil pencarian dari DB
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  // Data toko (sales dari backend)
+  const [storeGames, setStoreGames] = useState([]);
+  const [loadingStore, setLoadingStore] = useState(false);
+
+  const { sortKey, sortDir, handleSort, applySorting } = useSort(
+    "game_name",
+    "asc",
+  );
   const sortedStoreGames = applySorting(storeGames);
 
   const searchRef = useRef(null);
-  const filtered =
-    searchQuery.trim().length > 0
-      ? mockData.filter(
-          (g) =>
-            g.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            !storeGames.find((s) => s.id === g.id),
-        )
-      : [];
+  const searchTimeout = useRef(null);
 
+  // ── Load sales dari backend saat mount ──────────────────────────────────
+  const loadStoreGames = useCallback(async () => {
+    setLoadingStore(true);
+    try {
+      const result = await fetchSales({ pageSize: 100 });
+      setStoreGames(result.data);
+    } catch (err) {
+      setError(`Gagal memuat data toko: ${err.message}`);
+    } finally {
+      setLoadingStore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStoreGames();
+  }, [loadStoreGames]);
+
+  // ── Tutup dropdown saat klik luar ────────────────────────────────────────
   useEffect(() => {
     const handleClick = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -37,19 +63,44 @@ function MyStorePage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // ── Search ke DB dengan debounce 400ms ───────────────────────────────────
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    setSelectedGame(null);
+    setError("");
+    setSuccess("");
+
+    if (!val.trim()) {
+      setSearchResults([]);
+      setDropdownOpen(false);
+      return;
+    }
+
+    setDropdownOpen(true);
+
+    // Debounce — tunggu user berhenti mengetik
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const result = await fetchGames({ search: val.trim(), pageSize: 20 });
+        // Filter game yang sudah ada di toko
+        const existingGameIds = new Set(storeGames.map((s) => s.game_id));
+        setSearchResults(result.data.filter((g) => !existingGameIds.has(g.id)));
+      } catch (_) {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  };
+
   const handleSelectGame = (game) => {
     setSelectedGame(game);
     setSearchQuery(game.name);
     setDropdownOpen(false);
+    setSearchResults([]);
     setError("");
-  };
-
-  const handleSearchChange = (val) => {
-    setSearchQuery(val);
-    setSelectedGame(null);
-    setDropdownOpen(true);
-    setError("");
-    setSuccess("");
   };
 
   const handlePriceChange = (e) => {
@@ -57,24 +108,38 @@ function MyStorePage() {
     setError("");
   };
 
-  const handleAdd = () => {
+  // ── Tambah game ke toko (POST /sales) ────────────────────────────────────
+  const handleAdd = async () => {
     if (!selectedGame)
       return setError("Pilih game dari dropdown terlebih dahulu.");
     if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0)
       return setError("Masukkan harga yang valid.");
 
-    const entry = { ...selectedGame, ourPrice: parseFloat(price).toFixed(2) };
-    setStoreGames((prev) => [entry, ...prev]);
-    setSearchQuery("");
-    setPrice("");
-    setSelectedGame(null);
-    setError("");
-    setSuccess(`"${entry.name}" berhasil ditambahkan ke toko!`);
-    setTimeout(() => setSuccess(""), 3000);
+    try {
+      await createSale({
+        game_id: selectedGame.id,
+        our_price: parseFloat(price),
+      });
+      setSearchQuery("");
+      setPrice("");
+      setSelectedGame(null);
+      setError("");
+      setSuccess(`"${selectedGame.name}" berhasil ditambahkan ke toko!`);
+      setTimeout(() => setSuccess(""), 3000);
+      loadStoreGames(); // refresh tabel
+    } catch (err) {
+      setError(`Gagal menambahkan: ${err.message}`);
+    }
   };
 
-  const handleDelete = (id) => {
-    setStoreGames((prev) => prev.filter((g) => g.id !== id));
+  // ── Hapus sale dari toko (DELETE /sales/:id) ─────────────────────────────
+  const handleDelete = async (id) => {
+    try {
+      await deleteSale(id);
+      setStoreGames((prev) => prev.filter((g) => g.id !== id));
+    } catch (err) {
+      setError(`Gagal menghapus: ${err.message}`);
+    }
   };
 
   return (
@@ -111,14 +176,18 @@ function MyStorePage() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => searchQuery && setDropdownOpen(true)}
-                placeholder="Masukkan nama game..."
+                placeholder="Cari game dari database..."
               />
 
-              {/* Dropdown */}
+              {/* Dropdown hasil pencarian */}
               {dropdownOpen && searchQuery && (
                 <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto">
-                  {filtered.length > 0 ? (
-                    filtered.map((game) => (
+                  {searching ? (
+                    <div className="px-4 py-4 text-slate-400 text-sm text-center">
+                      Mencari...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((game) => (
                       <div
                         key={game.id}
                         onMouseDown={() => handleSelectGame(game)}
@@ -129,11 +198,13 @@ function MyStorePage() {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs bg-blue-900 text-blue-300 font-semibold px-2 py-0.5 rounded">
-                            {game.genre}
+                            {game.genre ?? "-"}
                           </span>
-                          <span className="text-xs text-slate-400">
-                            {game.platform}
-                          </span>
+                          {game.price_cheap != null && (
+                            <span className="text-xs text-slate-400">
+                              Global: ${Number(game.price_cheap).toFixed(2)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))
@@ -193,7 +264,11 @@ function MyStorePage() {
 
       {/* Table Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {storeGames.length === 0 ? (
+        {loadingStore ? (
+          <div className="px-4 py-3 bg-yellow-50 text-yellow-700 text-xs">
+            Memuat data toko...
+          </div>
+        ) : storeGames.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
             <div className="text-5xl mb-4">🛒</div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">
@@ -212,19 +287,28 @@ function MyStorePage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-8">
                     #
                   </th>
-                  {COLUMNS.filter((col) => col.key !== "cheapest").map(
-                    (col) => (
-                      <TableHeader
-                        key={col.key}
-                        col={col.key}
-                        label={col.label}
-                        sortKey={sortKey}
-                        sortDir={sortDir}
-                        handleSort={handleSort}
-                        filterNode={null}
-                      />
-                    ),
-                  )}
+                  <TableHeader
+                    key="game_name"
+                    col="game_name"
+                    label="Nama Game"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    handleSort={handleSort}
+                  />
+                  <TableHeader
+                    col="game_genre"
+                    label="Genre"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    handleSort={handleSort}
+                  />
+                  <TableHeader
+                    col="our_price"
+                    label="Store Price"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    handleSort={handleSort}
+                  />
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Action
                   </th>
@@ -233,12 +317,16 @@ function MyStorePage() {
               <TableBody
                 filteredData={sortedStoreGames}
                 handleDelete={handleDelete}
-                priceKey="ourPrice"
+                priceKey="our_price"
+                fieldMap={{
+                  name: "game_name",
+                  genre: "game_genre",
+                }}
+                columns={["name", "genre", "price"]}
               />
             </table>
             <div className="px-5 py-3 text-xs text-slate-400 border-t border-slate-100">
-              Menampilkan {storeGames.length} dari {storeGames.length} game di
-              toko
+              Menampilkan {storeGames.length} game di toko
             </div>
           </div>
         )}
