@@ -1,0 +1,1 @@
+from app.tasks.sync_tasks import sync_games_task
