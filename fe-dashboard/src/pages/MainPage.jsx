@@ -15,9 +15,10 @@ import {
   deleteGame
 } from "../utils/network-data";
 
+const PAGE_SIZE = 10;
+
 function MainPage() {
   const [data, setData] = useState([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,78 +27,63 @@ function MainPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(null);
 
-  const { sortKey, sortDir, handleSort, applySorting } = useSort(
-    "updated_at",
-    "desc",
-  );
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { sortKey, sortDir, handleSort, applySorting } = useSort("updated_at", "desc");
 
   const {
-    filterGenre,
-    setFilterGenre,
-    filterRating,
-    setFilterRating,
-    filterPrice,
-    setFilterPrice,
-    filterDate,
-    setFilterDate,
+    filterGenre, setFilterGenre,
+    filterRating, setFilterRating,
+    filterPrice, setFilterPrice,
+    filterDate, setFilterDate,
     activeFilterCount,
     clearAllFilters,
     applyFiltering,
   } = useFilter(data);
 
-  // ── Derived filter options dari data yang ada di halaman ini ───────────────
   const genres = [...new Set(data.map((g) => g.genre).filter(Boolean))];
 
-  // ── Load data dari backend ─────────────────────────────────────────────────
+  // ── Fetch sekali saat mount & setelah sync ────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchGames({
-        pageSize: 100,
-        sortBy: sortKey,
-        sortDir,
-        search: search || undefined,
-        genre: filterGenre || undefined,
-      });
+      const result = await fetchGames({ pageSize: 100 });
       setData(result.data);
-      setTotal(result.total);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [sortKey, sortDir, search, filterGenre]);
+  }, []);
 
-  // Load awal + tiap kali sort/search/filter genre berubah
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Load last sync info saat mount
   useEffect(() => {
     fetchLastSyncGames()
       .then((log) => {
-        if (log?.synced_at) {
-          setLastSync(
-            new Date(log.synced_at).toLocaleString("id-ID"),
-          );
-        }
+        if (log?.synced_at)
+          setLastSync(new Date(log.synced_at).toLocaleString("id-ID"));
       })
-      .catch(() => {}); // silent — last sync tidak kritis
+      .catch(() => {});
   }, []);
+
+  // Reset ke halaman 1 setiap kali filter/search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterGenre, filterRating, filterPrice, filterDate]);
 
   // ── Sync handler ───────────────────────────────────────────────────────────
   const handleSync = async () => {
     setSyncing(true);
     setSyncProgress(null);
-
     await syncWithPolling({
       limit: 40,
       intervalMs: 1500,
-      onProgress: (status) => {
-        setSyncProgress(status.progress);
-      },
+      onProgress: (status) => setSyncProgress(status.progress),
       onSuccess: async () => {
         const log = await fetchLastSync().catch(() => null);
         setLastSync(
@@ -107,10 +93,10 @@ function MainPage() {
         );
         setSyncing(false);
         setSyncProgress(null);
-        loadData(); // refresh tabel setelah sync
+        setCurrentPage(1);
+        loadData();
       },
       onError: (err) => {
-        console.error("Sync error:", err);
         setError(`Sync gagal: ${err.message}`);
         setSyncing(false);
         setSyncProgress(null);
@@ -123,33 +109,47 @@ function MainPage() {
     try {
       await deleteGame(id);
       setData((prev) => prev.filter((g) => g.id !== id));
-      setTotal((prev) => prev - 1);
     } catch (err) {
       setError(`Gagal menghapus: ${err.message}`);
     }
   };
 
-  // ── Filter + sort di client (untuk range price, rating, date) ──────────────
+  // ── Sort & filter client-side, lalu paginate ──────────────────────────────
   const filteredData = applySorting(applyFiltering(search));
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  // ── Pagination helpers ─────────────────────────────────────────────────────
+  const goToPage = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
+  // Tampilkan max 5 nomor halaman di sekitar currentPage
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Games</h1>
 
-      {/* Error Banner */}
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center justify-between">
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="ml-4 text-red-400 hover:text-red-600 font-bold"
-          >
-            ✕
-          </button>
+          <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-600 font-bold">✕</button>
         </div>
       )}
 
-      {/* Sync Progress */}
       {syncing && syncProgress && (
         <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm">
           Syncing... {syncProgress.current}/{syncProgress.total} game
@@ -168,7 +168,6 @@ function MainPage() {
       />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Loading overlay */}
         {loading && (
           <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-100 text-yellow-700 text-xs">
             Memuat data...
@@ -179,98 +178,91 @@ function MainPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-8">
-                  #
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-8">#</th>
+                <TableHeader col="name" label="Nama Game" sortKey={sortKey} sortDir={sortDir} handleSort={handleSort} filterNode={null} />
                 <TableHeader
-                  col="name"
-                  label="Nama Game"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  handleSort={handleSort}
-                  filterNode={null}
+                  col="genre" label="Genre" sortKey={sortKey} sortDir={sortDir} handleSort={handleSort}
+                  filterNode={<SelectFilter label="Filter Genre" options={genres} value={filterGenre} onChange={setFilterGenre} onClear={() => setFilterGenre("")} />}
                 />
                 <TableHeader
-                  col="genre"
-                  label="Genre"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  handleSort={handleSort}
-                  filterNode={
-                    <SelectFilter
-                      label="Filter Genre"
-                      options={genres}
-                      value={filterGenre}
-                      onChange={setFilterGenre}
-                      onClear={() => setFilterGenre("")}
-                    />
-                  }
+                  col="released" label="Release Date" sortKey={sortKey} sortDir={sortDir} handleSort={handleSort}
+                  filterNode={<DateFilter value={filterDate} onChange={setFilterDate} onClear={() => setFilterDate({ from: "", to: "" })} />}
                 />
                 <TableHeader
-                  col="released"
-                  label="Release Date"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  handleSort={handleSort}
-                  filterNode={
-                    <DateFilter
-                      value={filterDate}
-                      onChange={setFilterDate}
-                      onClear={() => setFilterDate({ from: "", to: "" })}
-                    />
-                  }
+                  col="price_cheap" label="Price (Global)" sortKey={sortKey} sortDir={sortDir} handleSort={handleSort}
+                  filterNode={<RangeFilter label="Filter Harga ($)" min={0} max={100} value={filterPrice} onChange={setFilterPrice} onClear={() => setFilterPrice({ min: "", max: "" })} prefix="Masukkan range harga dalam USD" />}
                 />
                 <TableHeader
-                  col="price_cheap"
-                  label="Price (Global)"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  handleSort={handleSort}
-                  filterNode={
-                    <RangeFilter
-                      label="Filter Harga ($)"
-                      min={0}
-                      max={100}
-                      value={filterPrice}
-                      onChange={setFilterPrice}
-                      onClear={() => setFilterPrice({ min: "", max: "" })}
-                      prefix="Masukkan range harga dalam USD"
-                    />
-                  }
+                  col="rating" label="Rating" sortKey={sortKey} sortDir={sortDir} handleSort={handleSort}
+                  filterNode={<RangeFilter label="Filter Rating" min={0} max={10} value={filterRating} onChange={setFilterRating} onClear={() => setFilterRating({ min: "", max: "" })} prefix="Skala 0.0 – 10.0" />}
                 />
-                <TableHeader
-                  col="rating"
-                  label="Rating"
-                  sortKey={sortKey}
-                  sortDir={sortDir}
-                  handleSort={handleSort}
-                  filterNode={
-                    <RangeFilter
-                      label="Filter Rating"
-                      min={0}
-                      max={10}
-                      value={filterRating}
-                      onChange={setFilterRating}
-                      onClear={() => setFilterRating({ min: "", max: "" })}
-                      prefix="Skala 0.0 – 10.0"
-                    />
-                  }
-                />
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Action
-                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Action</th>
               </tr>
             </thead>
-            <TableBody
-              filteredData={filteredData}
-              handleDelete={handleDelete}
-              priceKey="price_cheap"
-            />
+            <TableBody filteredData={paginatedData} handleDelete={handleDelete} priceKey="price_cheap" />
           </table>
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
-          Menampilkan {filteredData.length} dari {total} data
+        {/* Footer: info + pagination */}
+        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+          <span className="text-xs text-gray-400">
+            Menampilkan {filteredData.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredData.length)} dari {filteredData.length} data
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              {/* Prev */}
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ‹
+              </button>
+
+              {/* First page + ellipsis */}
+              {getPageNumbers()[0] > 1 && (
+                <>
+                  <button onClick={() => goToPage(1)} className="px-2.5 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100">1</button>
+                  {getPageNumbers()[0] > 2 && <span className="text-xs text-gray-400 px-1">…</span>}
+                </>
+              )}
+
+              {/* Page numbers */}
+              {getPageNumbers().map((page) => (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
+                    page === currentPage
+                      ? "bg-blue-500 border-blue-500 text-white"
+                      : "border-gray-200 text-gray-500 hover:bg-gray-100"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              {/* Last page + ellipsis */}
+              {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+                <>
+                  {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
+                    <span className="text-xs text-gray-400 px-1">…</span>
+                  )}
+                  <button onClick={() => goToPage(totalPages)} className="px-2.5 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100">{totalPages}</button>
+                </>
+              )}
+
+              {/* Next */}
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 text-xs rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ›
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
