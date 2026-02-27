@@ -37,15 +37,15 @@ async def list_games(
 
 # ─── SYNC: fetch dari RAWG + CheapShark → simpan ke DB ───────────────────────
 
-@router.get("/sync", response_model=SyncLogInDB)
-async def trigger_sync(
-    limit: int = Query(40, ge=1, le=40, description="Jumlah game yang di-fetch dari RAWG"),
-    db: AsyncSession = Depends(get_db),
-):
-    log = await sync_games(db, limit=limit)
-    if log.status == "error":
-        raise HTTPException(status_code=500, detail=log.message)
-    return log
+# @router.get("/sync", response_model=SyncLogInDB)
+# async def trigger_sync(
+#     limit: int = Query(40, ge=1, le=40, description="Jumlah game yang di-fetch dari RAWG"),
+#     db: AsyncSession = Depends(get_db),
+# ):
+#     log = await sync_games(db, limit=limit)
+#     if log.status == "error":
+#         raise HTTPException(status_code=500, detail=log.message)
+#     return log
 
 
 # ─── READ: last sync ──────────────────────────────────────────────────────────
