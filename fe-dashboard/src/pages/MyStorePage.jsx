@@ -34,7 +34,7 @@ function MyStorePage() {
   const [editPrice, setEditPrice] = useState("");
 
   const { sortKey, sortDir, handleSort, applySorting } = useSort(
-    "game_name",
+    null,
     "asc",
   );
   const sortedStoreGames = applySorting(storeGames);
