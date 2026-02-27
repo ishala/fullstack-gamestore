@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     CHEAPSHARK_BASE: str = "https://www.cheapshark.com/api/1.0"
     DATABASE_URL: str
 
+    REDIS_URL: str
+
     ENVIRONMENT: str = "dev"
     class Config:
         env_file = (
