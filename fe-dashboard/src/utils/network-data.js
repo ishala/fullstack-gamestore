@@ -78,7 +78,7 @@ export async function fetchGames({
  * @param {number} saleId
  * @returns {Promise<string>}
  */
-export async function deleteGame({gameId}) {
+export async function deleteGame(gameId) {
     return apiFetch(`/games/${gameId}`, { method: "DELETE" });
 }
 
