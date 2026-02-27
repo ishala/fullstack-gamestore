@@ -34,7 +34,7 @@ MainHeader.propTypes = {
   setSearch: PropTypes.func.isRequired,
   activeFilterCount: PropTypes.number,
   clearAllFilters: PropTypes.func.isRequired,
-  lastSync: PropTypes.bool,
+  lastSync: PropTypes.string,
   handleSync: PropTypes.func.isRequired,
   syncing: PropTypes.bool.isRequired,
 };
