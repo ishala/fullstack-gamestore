@@ -20,7 +20,7 @@ function SyncDataButton({ lastSync, onClick, isSyncing }) {
 }
 
 SyncDataButton.propTypes = {
-  lastSync: PropTypes.bool,
+  lastSync: PropTypes.string,
   onClick: PropTypes.func.isRequired,
   isSyncing: PropTypes.bool.isRequired,
 };
