@@ -3,11 +3,14 @@ import SearchField from "../components/SearchField";
 import TableHeader from "../components/TableHeader";
 import TableBody from "../components/TableBody";
 import { useSort } from "../hooks/useSort";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/Pagination";
 import {
   fetchGames,
   fetchSales,
   createSale,
   deleteSale,
+  updateSale
 } from "../utils/network-data";
 
 function MyStorePage() {
@@ -26,6 +29,10 @@ function MyStorePage() {
   const [storeGames, setStoreGames] = useState([]);
   const [loadingStore, setLoadingStore] = useState(false);
 
+  // Edit Harga
+  const [editingId, setEditingId] = useState(null);
+  const [editPrice, setEditPrice] = useState("");
+
   const { sortKey, sortDir, handleSort, applySorting } = useSort(
     "game_name",
     "asc",
@@ -34,6 +41,15 @@ function MyStorePage() {
 
   const searchRef = useRef(null);
   const searchTimeout = useRef(null);
+  const {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    getPageNumbers,
+    PAGE_SIZE,
+  } = usePagination(sortedStoreGames);
 
   // ── Load sales dari backend saat mount ──────────────────────────────────
   const loadStoreGames = useCallback(async () => {
@@ -126,6 +142,7 @@ function MyStorePage() {
       setError("");
       setSuccess(`"${selectedGame.name}" berhasil ditambahkan ke toko!`);
       setTimeout(() => setSuccess(""), 3000);
+      setCurrentPage(1);
       loadStoreGames(); // refresh tabel
     } catch (err) {
       setError(`Gagal menambahkan: ${err.message}`);
@@ -137,11 +154,44 @@ function MyStorePage() {
     try {
       await deleteSale(id);
       setStoreGames((prev) => prev.filter((g) => g.id !== id));
+      setCurrentPage(1);
     } catch (err) {
       setError(`Gagal menghapus: ${err.message}`);
     }
   };
 
+  const handleEditStart = (game) => {
+    setEditingId(game.id);
+    setEditPrice(String(game.our_price));
+  };
+
+  const handleEditSave = async (id) => {
+    if (
+      !editPrice ||
+      isNaN(parseFloat(editPrice)) ||
+      parseFloat(editPrice) <= 0
+    ) {
+      setError("Masukkan harga yang valid.");
+      return;
+    }
+    try {
+      await updateSale(id, { our_price: parseFloat(editPrice) });
+      setStoreGames((prev) =>
+        prev.map((g) =>
+          g.id === id ? { ...g, our_price: parseFloat(editPrice) } : g,
+        ),
+      );
+      setEditingId(null);
+      setEditPrice("");
+    } catch (err) {
+      setError(`Gagal mengupdate: ${err.message}`);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditPrice("");
+  };
   return (
     <div className="min-h-screen bg-slate-100 px-8 py-8">
       {/* Header */}
@@ -315,7 +365,7 @@ function MyStorePage() {
                 </tr>
               </thead>
               <TableBody
-                filteredData={sortedStoreGames}
+                filteredData={paginatedData}
                 handleDelete={handleDelete}
                 priceKey="our_price"
                 fieldMap={{
@@ -323,10 +373,33 @@ function MyStorePage() {
                   genre: "game_genre",
                 }}
                 columns={["name", "genre", "price"]}
+                editingId={editingId}
+                editPrice={editPrice}
+                setEditPrice={setEditPrice}
+                onEditStart={handleEditStart}
+                onEditSave={handleEditSave}
+                onEditCancel={handleEditCancel}
               />
             </table>
-            <div className="px-5 py-3 text-xs text-slate-400 border-t border-slate-100">
-              Menampilkan {storeGames.length} game di toko
+            {/* Footer: info + pagination */}
+            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                Menampilkan{" "}
+                {sortedStoreGames.length === 0
+                  ? 0
+                  : (currentPage - 1) * PAGE_SIZE + 1}
+                –{Math.min(currentPage * PAGE_SIZE, sortedStoreGames.length)}{" "}
+                dari {sortedStoreGames.length} data
+              </span>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                goToPage={goToPage}
+                getPageNumbers={getPageNumbers}
+                totalData={sortedStoreGames.length}
+                PAGE_SIZE={PAGE_SIZE}
+              />
             </div>
           </div>
         )}
