@@ -1,12 +1,5 @@
 import { useState } from "react";
 
-/**
- * useFilter — disesuaikan dengan field GameInDB dari /games:
- *   name, genre, price_cheap, rating, released
- *
- * Filter genre & search dikirim ke server via fetchGames().
- * Filter rating, price, date dilakukan di client-side.
- */
 export function useFilter(data) {
   const [filterGenre, setFilterGenre] = useState("");
   const [filterRating, setFilterRating] = useState({ min: "", max: "" });
@@ -27,16 +20,14 @@ export function useFilter(data) {
     setFilterDate({ from: "", to: "" });
   };
 
-  /**
-   * Filter client-side pada data yang sudah di-fetch dari server.
-   * Genre sudah difilter server, tidak diulang di sini.
-   *
-   * @param {string} search
-   */
   const applyFiltering = (search = "") =>
     data.filter((g) => {
-      // Search nama game (client-side fallback)
+      // Search nama game
       if (search && !g.name?.toLowerCase().includes(search.toLowerCase()))
+        return false;
+
+      // Filter genre — client-side
+      if (filterGenre && g.genre !== filterGenre)
         return false;
 
       // Filter rating
@@ -65,14 +56,10 @@ export function useFilter(data) {
     });
 
   return {
-    filterGenre,
-    setFilterGenre,
-    filterRating,
-    setFilterRating,
-    filterPrice,
-    setFilterPrice,
-    filterDate,
-    setFilterDate,
+    filterGenre, setFilterGenre,
+    filterRating, setFilterRating,
+    filterPrice, setFilterPrice,
+    filterDate, setFilterDate,
     activeFilterCount,
     clearAllFilters,
     applyFiltering,
