@@ -23,7 +23,7 @@ function TableBody({
   setEditPrice,
   onEditStart,
   onEditSave,
-  onEditCancel
+  onEditCancel,
 }) {
   const fields = { ...DEFAULT_FIELD_MAP, ...fieldMap };
   const visibleCols = columns ?? ALL_COLUMNS;
@@ -51,6 +51,19 @@ function TableBody({
           <tr key={game.id} className="hover:bg-gray-50 transition-colors">
             {/* No. */}
             <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
+
+            {/* Tanggal Dibuat */}
+            {visibleCols.includes("created_at") && (
+              <td className="px-4 py-3 text-gray-600 text-sm">
+                {game.created_at
+                  ? new Date(game.created_at).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "-"}
+              </td>
+            )}
 
             {/* Nama Game */}
             {visibleCols.includes("name") && (
