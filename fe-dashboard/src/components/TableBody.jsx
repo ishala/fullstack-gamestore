@@ -39,11 +39,6 @@ function TableBody({ filteredData, handleDelete, priceKey = "price_cheap" }) {
               <span className="font-semibold text-emerald-600">
                 {formatPrice(game[priceKey])}
               </span>
-              {/* {game.price_external != null && (
-                <span className="ml-1.5 text-xs text-gray-400 line-through">
-                  {formatPrice(game.price_external)}
-                </span>
-              )} */}
             </td>
             <td className="px-4 py-3">
               <RatingBadge value={game.rating} />
