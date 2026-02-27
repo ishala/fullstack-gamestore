@@ -12,6 +12,8 @@ class GameBase(BaseModel):
     metacritic: Optional[int] = None
     background_image: Optional[str] = None
     platforms: Optional[str] = None
+    price_cheap: Optional[float] = None
+    price_external: Optional[float] = None
 
 class GameCreate(GameBase):
     id: int
