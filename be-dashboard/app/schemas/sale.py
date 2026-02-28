@@ -18,11 +18,10 @@ class SaleInDB(SaleBase):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-    # Denormalized dari relasi Game — untuk kemudahan frontend
     game_name: Optional[str] = None
     game_genre: Optional[str] = None
-    price_cheap: Optional[float] = None        # harga global CheapShark
-    price_external: Optional[float] = None    # harga normal Steam
+    price_cheap: Optional[float] = None
+    price_external: Optional[float] = None
 
     class Config:
         from_attributes = True
