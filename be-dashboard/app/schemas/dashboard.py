@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+
+
+# ─── Existing ─────────────────────────────────────────────────────────────────
 
 class PriceRangeByGenre(BaseModel):
-    """Chart 1: Kisaran harga global per genre (min, max, avg)."""
     genre: str
     min_price: Optional[float] = None
     max_price: Optional[float] = None
@@ -11,18 +12,40 @@ class PriceRangeByGenre(BaseModel):
     game_count: int
 
 class PriceRatioItem(BaseModel):
-    """Chart 2: Rasio harga toko vs harga global per game."""
     game_id: int
     game_name: str
     genre: Optional[str] = None
     our_price: float
-    price_cheap: Optional[float] = None    # pembanding: harga global termurah
-    ratio: Optional[float] = None          # our_price / price_cheap
+    price_cheap: Optional[float] = None
+    ratio: Optional[float] = None
 
 class PriceGapByGenre(BaseModel):
-    """Chart 3: Rata-rata selisih harga toko vs global per genre."""
     genre: str
     avg_our_price: float
     avg_global_price: Optional[float] = None
-    avg_gap: Optional[float] = None        # avg_our_price - avg_global_price
-    gap_percent: Optional[float] = None    # selisih dalam persen
+    avg_gap: Optional[float] = None
+    gap_percent: Optional[float] = None
+
+
+# ─── New ──────────────────────────────────────────────────────────────────────
+
+class GamesByDate(BaseModel):
+    """COUNT game GROUP BY updated_at."""
+    date: str   # "YYYY-MM-DD"
+    count: int
+
+class AvgRatingByGenre(BaseModel):
+    """AVG rating GROUP BY genre."""
+    genre: str
+    avg_rating: float
+    game_count: int
+
+class SalesByDate(BaseModel):
+    """COUNT sales GROUP BY created_at."""
+    date: str   # "YYYY-MM-DD"
+    count: int
+
+class MaxPriceByDate(BaseModel):
+    """MAX our_price GROUP BY created_at."""
+    date: str   # "YYYY-MM-DD"
+    max_price: float
