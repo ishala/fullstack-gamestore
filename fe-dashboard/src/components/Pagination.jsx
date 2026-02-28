@@ -13,7 +13,7 @@ function Pagination({
   return (
     <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
       <span className="text-xs text-gray-400">
-        Menampilkan {totalData === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
+        Show {totalData === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
         {Math.min(currentPage * PAGE_SIZE, totalData)} dari {totalData} data
       </span>
 

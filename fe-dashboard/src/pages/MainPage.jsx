@@ -6,9 +6,9 @@ import MainHeader from "../layouts/MainHeader";
 import SelectFilter from "../components/Filters/SelectFilter";
 import DateFilter from "../components/Filters/DateFilter";
 import RangeFilter from "../components/Filters/RangeFilter";
-import TableBody from "../components/TableBody";
 import TableHeader from "../components/TableHeader";
-import Pagination from "../components/Pagination";
+import TableBody from "../components/TableBody";
+import TableFooter from "../components/TableFooter";
 import {
   fetchGames,
   fetchLastSyncGames,
@@ -16,7 +16,6 @@ import {
   fetchLastSync,
   deleteGame,
 } from "../utils/network-data";
-
 
 function MainPage() {
   const [data, setData] = useState([]);
@@ -49,7 +48,6 @@ function MainPage() {
 
   const genres = [...new Set(data.map((g) => g.genre).filter(Boolean))];
 
-  // ── Fetch sekali saat mount & setelah sync ────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -76,10 +74,10 @@ function MainPage() {
       .catch(() => {});
   }, []);
 
-  // ── Sort & filter ─────────────────────────────────────────────────────────
+  // Sort & filter
   const filteredData = applySorting(applyFiltering(search));
 
-  // ── Pagination (setelah filteredData) ─────────────────────────────────────
+  // Pagination
   const {
     currentPage,
     setCurrentPage,
@@ -93,9 +91,16 @@ function MainPage() {
   // Reset ke halaman 1 setiap kali filter/search berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterGenre, filterRating, filterPrice, filterDate, setCurrentPage]);
+  }, [
+    search,
+    filterGenre,
+    filterRating,
+    filterPrice,
+    filterDate,
+    setCurrentPage,
+  ]);
 
-  // ── Sync handler ───────────────────────────────────────────────────────────
+  // Sync handler
   const handleSync = async () => {
     setSyncing(true);
     setSyncProgress(null);
@@ -123,7 +128,7 @@ function MainPage() {
     });
   };
 
-  // ── Delete handler ─────────────────────────────────────────────────────────
+  // Delete handler
   const handleDelete = async (id) => {
     try {
       await deleteGame(id);
@@ -168,7 +173,7 @@ function MainPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading && (
           <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-100 text-yellow-700 text-xs">
-            Memuat data...
+            Loading data...
           </div>
         )}
 
@@ -181,7 +186,7 @@ function MainPage() {
                 </th>
                 <TableHeader
                   col="name"
-                  label="Nama Game"
+                  label="Game Name"
                   sortKey={sortKey}
                   sortDir={sortDir}
                   handleSort={handleSort}
@@ -267,23 +272,14 @@ function MainPage() {
         </div>
 
         {/* Footer: info + pagination */}
-        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-          <span className="text-xs text-gray-400">
-            Menampilkan{" "}
-            {filteredData.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
-            {Math.min(currentPage * PAGE_SIZE, filteredData.length)} dari{" "}
-            {filteredData.length} data
-          </span>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            goToPage={goToPage}
-            getPageNumbers={getPageNumbers}
-            totalData={filteredData.length}
-            PAGE_SIZE={PAGE_SIZE}
-          />
-        </div>
+        <TableFooter
+          filteredData={filteredData}
+          currentPage={currentPage}
+          pageSize={PAGE_SIZE}
+          totalPages={totalPages}
+          goToPage={goToPage}
+          getPageNumbers={getPageNumbers}
+        />
       </div>
     </div>
   );

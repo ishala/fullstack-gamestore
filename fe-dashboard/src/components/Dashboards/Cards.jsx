@@ -21,7 +21,7 @@ Cards.propTypes = {
     avg_our_price:    PropTypes.number,
   }).isRequired,
   genreData: PropTypes.arrayOf(PropTypes.object).isRequired,
-  topGapGenre: PropTypes.arrayOf(PropTypes.object).isRequired,
+  topGapGenre: PropTypes.string.isRequired,
   isSales: PropTypes.bool.isRequired
 };
 

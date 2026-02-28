@@ -4,13 +4,13 @@ import TableHeader from "../components/TableHeader";
 import TableBody from "../components/TableBody";
 import { useSort } from "../hooks/useSort";
 import { usePagination } from "../hooks/usePagination";
-import Pagination from "../components/Pagination";
+import TableFooter from "../components/TableFooter";
 import {
   fetchGames,
   fetchSales,
   createSale,
   deleteSale,
-  updateSale
+  updateSale,
 } from "../utils/network-data";
 
 function MyStorePage() {
@@ -25,7 +25,7 @@ function MyStorePage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
-  // Data toko (sales dari backend)
+  // Data toko
   const [storeGames, setStoreGames] = useState([]);
   const [loadingStore, setLoadingStore] = useState(false);
 
@@ -33,10 +33,7 @@ function MyStorePage() {
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
-  const { sortKey, sortDir, handleSort, applySorting } = useSort(
-    null,
-    "asc",
-  );
+  const { sortKey, sortDir, handleSort, applySorting } = useSort(null, "asc");
   const sortedStoreGames = applySorting(storeGames);
 
   const searchRef = useRef(null);
@@ -51,7 +48,7 @@ function MyStorePage() {
     PAGE_SIZE,
   } = usePagination(sortedStoreGames);
 
-  // ── Load sales dari backend saat mount ──────────────────────────────────
+  // Load store sales game
   const loadStoreGames = useCallback(async () => {
     setLoadingStore(true);
     try {
@@ -68,7 +65,7 @@ function MyStorePage() {
     loadStoreGames();
   }, [loadStoreGames]);
 
-  // ── Tutup dropdown saat klik luar ────────────────────────────────────────
+  // Tutup dropdown saat klik luar
   useEffect(() => {
     const handleClick = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -79,7 +76,7 @@ function MyStorePage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // ── Search ke DB dengan debounce 400ms ───────────────────────────────────
+  // Search Game dengan debounce 400ms─
   const handleSearchChange = (val) => {
     setSearchQuery(val);
     setSelectedGame(null);
@@ -124,7 +121,7 @@ function MyStorePage() {
     setError("");
   };
 
-  // ── Tambah game ke toko (POST /sales) ────────────────────────────────────
+  // Tambah game ke toko
   const handleAdd = async () => {
     if (!selectedGame)
       return setError("Pilih game dari dropdown terlebih dahulu.");
@@ -149,7 +146,7 @@ function MyStorePage() {
     }
   };
 
-  // ── Hapus sale dari toko (DELETE /sales/:id) ─────────────────────────────
+  // Hapus Game dari Toko
   const handleDelete = async (id) => {
     try {
       await deleteSale(id);
@@ -160,11 +157,13 @@ function MyStorePage() {
     }
   };
 
+  // Handler tombol edit
   const handleEditStart = (game) => {
     setEditingId(game.id);
     setEditPrice(String(game.our_price));
   };
 
+  // Handler tombol centang untuk edit
   const handleEditSave = async (id) => {
     if (
       !editPrice ||
@@ -188,10 +187,12 @@ function MyStorePage() {
     }
   };
 
+  // Handler tombol silang untuk edit
   const handleEditCancel = () => {
     setEditingId(null);
     setEditPrice("");
   };
+
   return (
     <div className="min-h-screen bg-slate-100 px-8 py-8">
       {/* Header */}
@@ -201,7 +202,7 @@ function MyStorePage() {
             My Store
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Kelola game yang dijual di toko kamu
+            Manage games in this store
           </p>
         </div>
         <div className="flex items-center gap-2 bg-slate-800 text-slate-100 rounded-xl px-4 py-2 text-sm font-bold">
@@ -219,14 +220,14 @@ function MyStorePage() {
             ref={searchRef}
           >
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Nama Game
+              Game Name
             </label>
             <div className="relative">
               <SearchField
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => searchQuery && setDropdownOpen(true)}
-                placeholder="Cari game dari database..."
+                placeholder="Search game from database..."
               />
 
               {/* Dropdown hasil pencarian */}
@@ -271,7 +272,7 @@ function MyStorePage() {
           {/* Price Input */}
           <div className="w-48 flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Harga Toko
+              Store Price
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold pointer-events-none select-none">
@@ -294,7 +295,7 @@ function MyStorePage() {
               onClick={handleAdd}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap shadow-sm cursor-pointer"
             >
-              + Tambah ke Toko
+              + Add to Store
             </button>
           </div>
         </div>
@@ -380,7 +381,7 @@ function MyStorePage() {
                   name: "game_name",
                   genre: "game_genre",
                 }}
-                columns={["created_at","name", "genre", "price"]}
+                columns={["created_at", "name", "genre", "price"]}
                 editingId={editingId}
                 editPrice={editPrice}
                 setEditPrice={setEditPrice}
@@ -390,25 +391,14 @@ function MyStorePage() {
               />
             </table>
             {/* Footer: info + pagination */}
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
-                Menampilkan{" "}
-                {sortedStoreGames.length === 0
-                  ? 0
-                  : (currentPage - 1) * PAGE_SIZE + 1}
-                –{Math.min(currentPage * PAGE_SIZE, sortedStoreGames.length)}{" "}
-                dari {sortedStoreGames.length} data
-              </span>
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                goToPage={goToPage}
-                getPageNumbers={getPageNumbers}
-                totalData={sortedStoreGames.length}
-                PAGE_SIZE={PAGE_SIZE}
-              />
-            </div>
+            <TableFooter
+              filteredData={sortedStoreGames}
+              currentPage={currentPage}
+              pageSize={PAGE_SIZE}
+              totalPages={totalPages}
+              goToPage={goToPage}
+              getPageNumbers={getPageNumbers}
+            />
           </div>
         )}
       </div>
