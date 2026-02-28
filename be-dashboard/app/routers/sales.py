@@ -15,8 +15,11 @@ from app.crud.games import get_by_id as get_game_by_id
 router = APIRouter()
 
 
-# ─── READ: list ───────────────────────────────────────────────────────────────
+############################################################
+# READ
+############################################################
 
+# Read: list dengan pagination, filter, dan sorting
 @router.get("", response_model=PaginatedSales)
 async def list_sales(
     page: int = Query(1, ge=1),
@@ -31,8 +34,7 @@ async def list_sales(
     return PaginatedSales(total=total, page=page, page_size=page_size, data=sales)
 
 
-# ─── READ: detail ─────────────────────────────────────────────────────────────
-
+# Read: detail sale by ID
 @router.get("/{sale_id}", response_model=SaleInDB)
 async def get_sale(sale_id: int, db: AsyncSession = Depends(get_db)):
     sale = await get_by_id(db, sale_id)
@@ -51,8 +53,11 @@ async def get_sale(sale_id: int, db: AsyncSession = Depends(get_db)):
     )
 
 
-# ─── CREATE ───────────────────────────────────────────────────────────────────
+############################################################
+# CREATE
+############################################################
 
+# Create: buat sale baru
 @router.post("", response_model=SaleInDB, status_code=201)
 async def create_sale(payload: SaleCreate, db: AsyncSession = Depends(get_db)):
     # Validasi game_id — harus ada di tabel games
@@ -74,8 +79,11 @@ async def create_sale(payload: SaleCreate, db: AsyncSession = Depends(get_db)):
     )
 
 
-# ─── UPDATE ───────────────────────────────────────────────────────────────────
+############################################################
+# UPDATE
+############################################################
 
+# Update: update sale by ID
 @router.patch("/{sale_id}", response_model=SaleInDB)
 async def update_sale(sale_id: int, payload: SaleUpdate, db: AsyncSession = Depends(get_db)):
     sale = await get_by_id(db, sale_id)
@@ -102,8 +110,11 @@ async def update_sale(sale_id: int, payload: SaleUpdate, db: AsyncSession = Depe
     )
 
 
-# ─── DELETE ───────────────────────────────────────────────────────────────────
+############################################################
+# DELETE
+############################################################
 
+# Delete: hapus sale by ID
 @router.delete("/{sale_id}", status_code=204)
 async def delete_sale(sale_id: int, db: AsyncSession = Depends(get_db)):
     sale = await get_by_id(db, sale_id)
