@@ -19,6 +19,17 @@ from app.schemas.sync_log import SyncLogInDB
 
 router = APIRouter()
 
+# Sync all games: trigger Celery task untuk sync data game dari RAWG + CheapShark
+@router.post("/games/all", status_code=202)
+async def trigger_sync_all_games():
+    from app.tasks import sync_all_games_task
+    task = sync_all_games_task.delay()
+
+    return {
+        "task_id": task.id,
+        "status": "queued",
+        "message": f"Sync all games started. Poll /sync/status/{task.id} for progress.",
+    }
 
 # Sync games: trigger Celery task untuk sync data game dari RAWG + CheapShark
 @router.post("/games", status_code=202)

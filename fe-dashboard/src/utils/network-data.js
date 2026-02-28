@@ -244,6 +244,57 @@ export async function syncWithPolling({
   });
 }
 
+/**
+ * Trigger sinkronisasi SEMUA game dari RAWG (loop pagination, tanpa limit).
+ * Gunakan pollSyncStatus untuk memantau progress-nya.
+ *
+ * @returns {Promise<{ task_id: string, status: string, message: string }>}
+ */
+export async function triggerSyncAll() {
+  return apiFetch("/sync/games/all", { method: "POST" });
+}
+
+/**
+ * Sync semua game + polling otomatis sampai selesai.
+ */
+export async function syncAllWithPolling({
+  intervalMs = 1500,
+  onProgress,
+  onSuccess,
+  onError,
+} = {}) {
+  let taskId;
+  try {
+    const triggered = await triggerSyncAll();
+    taskId = triggered.task_id;
+  } catch (err) {
+    onError?.(err);
+    return;
+  }
+
+  return new Promise((resolve) => {
+    const timer = setInterval(async () => {
+      try {
+        const status = await pollSyncStatus(taskId);
+        onProgress?.(status);
+        if (status.state === "SUCCESS") {
+          clearInterval(timer);
+          onSuccess?.(status);
+          resolve();
+        } else if (status.state === "FAILURE") {
+          clearInterval(timer);
+          onError?.(new Error(status.message ?? "Sync all gagal"));
+          resolve();
+        }
+      } catch (err) {
+        clearInterval(timer);
+        onError?.(err);
+        resolve();
+      }
+    }, intervalMs);
+  });
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 /**

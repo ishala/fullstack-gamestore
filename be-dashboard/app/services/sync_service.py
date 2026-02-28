@@ -15,15 +15,17 @@ CHEAPSHARK_RETRY_DELAY = 5.0     # detik tunggu sebelum retry
 
 # STEP 1 — Fetch metadata dari RAWG
 
-async def _fetch_rawg_games(client: httpx.AsyncClient, limit: int) -> list[dict]:
+async def _fetch_rawg_games(client: httpx.AsyncClient, limit: int, page: int = 1) -> list[dict]:
     params = {
         "key": settings.RAWG_API_KEY,
         "page_size": limit,
         "ordering": "-added",
+        "page": page,
     }
     resp = await client.get(f"{settings.RAWG_BASE}/games", params=params)
     resp.raise_for_status()
-    return resp.json().get("results", [])
+    data = resp.json()
+    return data.get("results", []), data.get("next")
 
 
 def _slice_rawg(raw: dict) -> dict:

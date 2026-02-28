@@ -12,9 +12,9 @@ import TableFooter from "../components/TableFooter";
 import {
   fetchGames,
   fetchLastSyncGames,
-  syncWithPolling,
   fetchLastSync,
   deleteGame,
+  syncAllWithPolling,
 } from "../utils/network-data";
 
 function MainPage() {
@@ -100,12 +100,10 @@ function MainPage() {
     setCurrentPage,
   ]);
 
-  // Sync handler
-  const handleSync = async () => {
+  const handleSyncAll = async () => {
     setSyncing(true);
     setSyncProgress(null);
-    await syncWithPolling({
-      limit: 40,
+    await syncAllWithPolling({
       intervalMs: 1500,
       onProgress: (status) => setSyncProgress(status.progress),
       onSuccess: async () => {
@@ -121,7 +119,7 @@ function MainPage() {
         loadData();
       },
       onError: (err) => {
-        setError(`Sync gagal: ${err.message}`);
+        setError(`Sync all gagal: ${err.message}`);
         setSyncing(false);
         setSyncProgress(null);
       },
@@ -166,7 +164,7 @@ function MainPage() {
         activeFilterCount={activeFilterCount}
         clearAllFilters={clearAllFilters}
         lastSync={lastSync}
-        handleSync={handleSync}
+        handleSync={handleSyncAll}
         syncing={syncing}
       />
 

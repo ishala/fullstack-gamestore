@@ -1,1 +1,1 @@
-from app.tasks.sync_tasks import sync_games_task
+from app.tasks.sync_tasks import sync_games_task, sync_all_games_task
