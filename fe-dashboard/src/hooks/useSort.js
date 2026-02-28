@@ -14,7 +14,7 @@ export function useSort(initialKey = "updatedAt", initialDir = "desc") {
   };
 
   const applySorting = (data) => {
-    if (!sortKey) return data; // ← tambah ini
+    if (!sortKey) return data;
     return [...data].sort((a, b) => {
       const valA = a[sortKey],
         valB = b[sortKey];

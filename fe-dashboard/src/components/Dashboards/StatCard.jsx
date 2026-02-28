@@ -19,7 +19,7 @@ StatCard.propTypes = {
   icon:  PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   color: PropTypes.string.isRequired,
-  value: PropTypes.node,  // bisa string, number, atau undefined
+  value: PropTypes.node,
 };
 
 export default StatCard;

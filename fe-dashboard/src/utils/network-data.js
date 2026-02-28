@@ -1,19 +1,8 @@
-/**
- * salesApi.js
- * Utility untuk komunikasi FE ↔ BE — endpoint /api/v1/sales & /api/v1/sync
- *
- * Letakkan file ini di: fe-dashboard/src/utils/salesApi.js
- */
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const API = `${BASE_URL}/api/v1`;
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-
-/**
- * Wrapper fetch dengan error handling terpusat.
- * Melempar Error berisi pesan dari backend jika response tidak OK.
- */
+// Fetch API Wrapper
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API}${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -37,21 +26,7 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
-// ─── Games ────────────────────────────────────────────────────────────────────
-
-/**
- * Ambil list semua game dari tabel games (hasil sync RAWG+CheapShark).
- * Dipakai untuk MainPage.
- *
- * @param {Object} params
- * @param {number}  [params.page=1]
- * @param {number}  [params.pageSize=100]
- * @param {string}  [params.search]
- * @param {string}  [params.genre]
- * @param {string}  [params.sortBy]   - "name" | "released" | "rating" | "updated_at"
- * @param {string}  [params.sortDir]  - "asc" | "desc"
- * @returns {Promise<{ total: number, page: number, page_size: number, data: Game[] }>}
- */
+// Fetching Games
 export async function fetchGames({
   page = 1,
   pageSize = 100,

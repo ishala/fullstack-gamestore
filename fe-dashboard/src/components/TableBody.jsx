@@ -27,7 +27,6 @@ function TableBody({
 }) {
   const fields = { ...DEFAULT_FIELD_MAP, ...fieldMap };
   const visibleCols = columns ?? ALL_COLUMNS;
-  // colSpan = no. + kolom visible + action
   const colSpan = 1 + visibleCols.length + 1;
 
   const formatPrice = (val) =>

@@ -1,10 +1,3 @@
-"""
-Celery Tasks — Sync Games
-
-Berjalan di background worker terpisah dari FastAPI.
-Menggunakan asyncio.run() karena setiap task adalah event loop baru.
-DB menggunakan sync engine (psycopg2) karena Celery berjalan sync.
-"""
 import asyncio
 import httpx
 from datetime import datetime, timezone
@@ -23,8 +16,7 @@ from app.services.sync_service import (
 )
 
 
-# ── Sync DB engine untuk Celery (psycopg2, bukan asyncpg) ────────────────────
-
+# Sync DB engine untuk Celery worker
 def _get_sync_session():
     """Buat sync SQLAlchemy session untuk Celery worker."""
     sync_url = settings.DATABASE_URL.replace(
@@ -34,10 +26,7 @@ def _get_sync_session():
     return sessionmaker(bind=engine)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # CELERY TASK
-# ══════════════════════════════════════════════════════════════════════════════
-
 @celery.task(
     bind=True,
     name="app.tasks.sync_tasks.sync_games_task",
@@ -101,9 +90,8 @@ def sync_games_task(self: Task, limit: int = 40) -> dict:
 
     def _upsert(merged_rows: list[dict], fetched: int, skipped: int) -> tuple[int, int]:
         """Sync: upsert rows ke DB menggunakan psycopg2."""
-        # Import semua model sekaligus agar SQLAlchemy bisa resolve semua relationship
         from app.models.game import Game
-        from app.models.sale import Sale      # noqa: F401 — diperlukan agar relationship Game→Sale ter-resolve
+        from app.models.sale import Sale
         from app.models.sync_log import SyncLog
 
         inserted = updated = 0
@@ -115,13 +103,12 @@ def sync_games_task(self: Task, limit: int = 40) -> dict:
                 if existing:
                     for k, v in data.items():
                         setattr(existing, k, v)
-                    existing.updated_at = datetime.now()  # naive datetime — sesuai kolom DB
+                    existing.updated_at = datetime.now()
                     updated += 1
                 else:
                     db.add(Game(**data))
                     inserted += 1
 
-            # Hapus duplikat slug
             all_games = db.execute(select(Game)).scalars().all()
             seen: dict[str, int] = {}
             to_delete: list[int] = []
@@ -138,7 +125,7 @@ def sync_games_task(self: Task, limit: int = 40) -> dict:
             # Catat SyncLog
             db.add(SyncLog(
                 source="rawg+cheapshark",
-                synced_at=datetime.now(),  # naive datetime
+                synced_at=datetime.now(),
                 records_fetched=fetched,
                 records_inserted=inserted,
                 records_updated=updated,
