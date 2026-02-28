@@ -269,6 +269,101 @@ export async function syncWithPolling({
   });
 }
 
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+/**
+ * Helper: bangun query string date range.
+ * @param {string} dateFrom - format "YYYY-MM-DD"
+ * @param {string} dateTo   - format "YYYY-MM-DD"
+ * @returns {string} - "?date_from=...&date_to=..."
+ */
+function buildDateParams(dateFrom, dateTo) {
+  return `?date_from=${dateFrom}&date_to=${dateTo}`;
+}
+
+/**
+ * Ambil ringkasan data untuk summary cards.
+ * Tidak memiliki filter tanggal di BE saat ini.
+ *
+ * @returns {Promise<{
+ *   total_games: number,
+ *   total_sales: number,
+ *   avg_global_price: number,
+ *   avg_our_price: number
+ * }>}
+ */
+export async function fetchDashboardSummary() {
+  return apiFetch("/dashboard/summary");
+}
+
+/**
+ * Ambil kisaran harga global per genre (untuk Pie chart & analitik avg price).
+ * Difilter berdasarkan game.released.
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<PriceRangeByGenre[]>}
+ */
+export async function fetchPriceRangeByGenre(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/price-range-by-genre${buildDateParams(dateFrom, dateTo)}`);
+}
+
+/**
+ * Ambil jumlah game per tanggal last_updated (untuk Column chart Data Public).
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<{ date: string, count: number }[]>}
+ */
+export async function fetchGamesByDate(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/games-by-date${buildDateParams(dateFrom, dateTo)}`);
+}
+
+/**
+ * Ambil rata-rata rating per genre (untuk analitik tambahan Data Public).
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<{ genre: string, avg_rating: number, game_count: number }[]>}
+ */
+export async function fetchAvgRatingByGenre(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/avg-rating-by-genre${buildDateParams(dateFrom, dateTo)}`);
+}
+
+/**
+ * Ambil selisih harga toko vs global per genre (untuk Pie chart Data Sales).
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<PriceGapByGenre[]>}
+ */
+export async function fetchPriceGapByGenre(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/price-gap-by-genre${buildDateParams(dateFrom, dateTo)}`);
+}
+
+/**
+ * Ambil jumlah sales per tanggal (untuk Column chart 1 Data Sales).
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<{ date: string, count: number }[]>}
+ */
+export async function fetchSalesByDate(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/sales-by-date${buildDateParams(dateFrom, dateTo)}`);
+}
+
+/**
+ * Ambil MAX our_price per tanggal (untuk Line chart Data Sales).
+ * Jika ada 2 game ditambahkan dalam 1 hari, hanya harga tertinggi yang tampil.
+ *
+ * @param {string} dateFrom - "YYYY-MM-DD"
+ * @param {string} dateTo   - "YYYY-MM-DD"
+ * @returns {Promise<{ date: string, max_price: number }[]>}
+ */
+export async function fetchMaxPriceByDate(dateFrom, dateTo) {
+  return apiFetch(`/dashboard/max-price-by-date${buildDateParams(dateFrom, dateTo)}`);
+}
+
 // ─── JSDoc Types (referensi) ──────────────────────────────────────────────────
 
 /**
@@ -305,4 +400,22 @@ export async function syncWithPolling({
  * @property {number} [updated]
  * @property {number} [skipped]
  * @property {string} [message]
+ */
+
+/**
+ * @typedef {Object} PriceRangeByGenre
+ * @property {string} genre
+ * @property {number} min_price
+ * @property {number} max_price
+ * @property {number} avg_price
+ * @property {number} game_count
+ */
+
+/**
+ * @typedef {Object} PriceGapByGenre
+ * @property {string}      genre
+ * @property {number}      avg_our_price
+ * @property {number}      avg_global_price
+ * @property {number}      avg_gap
+ * @property {number|null} gap_percent
  */
