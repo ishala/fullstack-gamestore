@@ -20,8 +20,7 @@ from app.schemas.sync_log import SyncLogInDB
 router = APIRouter()
 
 
-# ─── Trigger sync ─────────────────────────────────────────────────────────────
-
+# Sync games: trigger Celery task untuk sync data game dari RAWG + CheapShark
 @router.post("/games", status_code=202)
 async def trigger_sync_games(
     limit: int = Query(40, ge=1, le=40, description="Jumlah game yang di-fetch dari RAWG"),
@@ -41,8 +40,7 @@ async def trigger_sync_games(
     }
 
 
-# ─── Cek status / progress ────────────────────────────────────────────────────
-
+# Polling status sync task
 @router.get("/status/{task_id}")
 async def get_task_status(task_id: str):
     """
@@ -106,8 +104,7 @@ async def get_task_status(task_id: str):
     return {"task_id": task_id, "state": result.state}
 
 
-# ─── Last sync dari DB ────────────────────────────────────────────────────────
-
+# Get last sync log dari DB
 @router.get("/last", response_model=Optional[SyncLogInDB])
 async def get_last_sync(db: AsyncSession = Depends(get_db)):
     """Tampilkan log sync terakhir yang berhasil."""
