@@ -13,9 +13,7 @@ CHEAPSHARK_MAX_RETRIES = 3       # maksimal retry saat 429
 CHEAPSHARK_RETRY_DELAY = 5.0     # detik tunggu sebelum retry
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # STEP 1 — Fetch metadata dari RAWG
-# ══════════════════════════════════════════════════════════════════════════════
 
 async def _fetch_rawg_games(client: httpx.AsyncClient, limit: int) -> list[dict]:
     params = {
@@ -36,7 +34,6 @@ def _slice_rawg(raw: dict) -> dict:
     released_dt = None
     if released_str:
         try:
-            # Kolom DB adalah DateTime (tanpa timezone), jadi tidak pakai tzinfo
             released_dt = datetime.strptime(released_str, "%Y-%m-%d")
         except ValueError:
             pass
@@ -55,16 +52,14 @@ def _slice_rawg(raw: dict) -> dict:
     }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # STEP 2 — Fetch harga dari CheapShark per game
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _normalize(text: str) -> str:
     """Lowercase, hapus karakter khusus, strip whitespace berlebih."""
     import re
     text = text.lower().strip()
-    text = re.sub(r"[:\-\'\"!?,.]", " ", text)  # ganti karakter khusus dengan spasi
-    text = re.sub(r"\s+", " ", text).strip()        # normalkan whitespace
+    text = re.sub(r"[:\-\'\"!?,.]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
@@ -78,7 +73,7 @@ def _best_match(results: list[dict], title_query: str) -> dict | None:
     4. Fallback ke hasil pertama
     """
     query_norm = _normalize(title_query)
-    query_words = [w for w in query_norm.split() if len(w) > 1]  # abaikan kata 1 huruf
+    query_words = [w for w in query_norm.split() if len(w) > 1]
 
     # Pass 1: exact match setelah normalisasi
     for item in results:
@@ -114,9 +109,6 @@ async def _fetch_cheapshark_price(client: httpx.AsyncClient, name: str) -> dict 
 
     Retry otomatis saat 429 Too Many Requests.
     """
-    # Gunakan name langsung dari RAWG — lebih akurat daripada slug
-    # Contoh: slug "gta-v" vs name "Grand Theft Auto V"
-    # CheapShark menggunakan LIKE %title% jadi name lebih mungkin match
     title_query = name.strip()
 
     for attempt in range(1, CHEAPSHARK_MAX_RETRIES + 1):
@@ -150,7 +142,7 @@ async def _fetch_cheapshark_price(client: httpx.AsyncClient, name: str) -> dict 
             return {
                 "cheapshark_game_id": str(best.get("gameID", "")),
                 "price_cheap": float(cheap),
-                "price_external": None,  # tidak tersedia di endpoint /games
+                "price_external": None
             }
 
         except httpx.HTTPStatusError:
@@ -164,18 +156,12 @@ async def _fetch_cheapshark_price(client: httpx.AsyncClient, name: str) -> dict 
     return None
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # STEP 3 — Gabungkan RAWG + CheapShark jadi satu row
-# ══════════════════════════════════════════════════════════════════════════════
-
 def _merge_row(rawg_data: dict, cs_data: dict) -> dict:
     return {**rawg_data, **cs_data}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # STEP 4 — Upsert semua row ke DB
-# ══════════════════════════════════════════════════════════════════════════════
-
 async def _upsert_games(db: AsyncSession, rows: list[dict]) -> tuple[int, int]:
     inserted = updated = 0
 
@@ -208,16 +194,12 @@ async def _upsert_games(db: AsyncSession, rows: list[dict]) -> tuple[int, int]:
     return inserted, updated
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # MAIN SYNC FUNCTION
-# ══════════════════════════════════════════════════════════════════════════════
-
 async def sync_games(db: AsyncSession, limit: int = 40) -> SyncLog:
     fetched = skipped = inserted = updated = 0
     message = None
 
     try:
-        # Timeout disesuaikan: limit * delay + worst case retry buffer
         timeout = limit * CHEAPSHARK_REQUEST_DELAY + (CHEAPSHARK_RETRY_DELAY * CHEAPSHARK_MAX_RETRIES * 3) + 30
 
         async with httpx.AsyncClient(timeout=timeout) as client:
