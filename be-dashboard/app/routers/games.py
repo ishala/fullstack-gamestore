@@ -18,9 +18,11 @@ from app.crud.games import (
 
 router = APIRouter()
 
+############################################################
+# READ
+############################################################
 
-# ─── READ: list ───────────────────────────────────────────────────────────────
-
+# Read: list dengan pagination, filter, dan sorting
 @router.get("", response_model=PaginatedGame)
 async def list_games(
     page: int = Query(1, ge=1),
@@ -34,22 +36,7 @@ async def list_games(
     total, games = await get_all(db, page, page_size, search, genre, sort_by, sort_dir)
     return PaginatedGame(total=total, page=page, page_size=page_size, data=games)
 
-
-# ─── SYNC: fetch dari RAWG + CheapShark → simpan ke DB ───────────────────────
-
-# @router.get("/sync", response_model=SyncLogInDB)
-# async def trigger_sync(
-#     limit: int = Query(40, ge=1, le=40, description="Jumlah game yang di-fetch dari RAWG"),
-#     db: AsyncSession = Depends(get_db),
-# ):
-#     log = await sync_games(db, limit=limit)
-#     if log.status == "error":
-#         raise HTTPException(status_code=500, detail=log.message)
-#     return log
-
-
-# ─── READ: last sync ──────────────────────────────────────────────────────────
-
+# Read: Endpoint untuk mendapatkan log sinkronisasi terakhir
 @router.get("/last-sync", response_model=Optional[SyncLogInDB])
 async def get_last_sync(db: AsyncSession = Depends(get_db)):
     stmt = (
@@ -61,9 +48,7 @@ async def get_last_sync(db: AsyncSession = Depends(get_db)):
     log = (await db.execute(stmt)).scalar_one_or_none()
     return log
 
-
-# ─── READ: detail ─────────────────────────────────────────────────────────────
-
+# Read: detail game by ID
 @router.get("/{game_id}", response_model=GameInDB)
 async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     game = await get_by_id(db, game_id)
@@ -72,8 +57,11 @@ async def get_game(game_id: int, db: AsyncSession = Depends(get_db)):
     return game
 
 
-# ─── CREATE ───────────────────────────────────────────────────────────────────
+############################################################
+# CREATE
+############################################################
 
+# Create: buat game baru
 @router.post("", response_model=GameInDB, status_code=201)
 async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
     if await get_by_id(db, payload.id):
@@ -83,8 +71,11 @@ async def create_game(payload: GameCreate, db: AsyncSession = Depends(get_db)):
     return await create(db, payload)
 
 
-# ─── UPDATE ───────────────────────────────────────────────────────────────────
+############################################################
+# UPDATE
+############################################################
 
+# Update: update game by ID
 @router.patch("/{game_id}", response_model=GameInDB)
 async def update_game(game_id: int, payload: GameUpdate, db: AsyncSession = Depends(get_db)):
     game = await get_by_id(db, game_id)
@@ -93,8 +84,11 @@ async def update_game(game_id: int, payload: GameUpdate, db: AsyncSession = Depe
     return await update(db, game, payload)
 
 
-# ─── DELETE ───────────────────────────────────────────────────────────────────
+############################################################
+# DELETE
+############################################################
 
+# Delete: hapus game by ID
 @router.delete("/{game_id}", status_code=204)
 async def delete_game(game_id: int, db: AsyncSession = Depends(get_db)):
     game = await get_by_id(db, game_id)
