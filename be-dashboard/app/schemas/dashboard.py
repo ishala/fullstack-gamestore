@@ -1,9 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
 
-
-# ─── Existing ─────────────────────────────────────────────────────────────────
-
 class PriceRangeByGenre(BaseModel):
     genre: str
     min_price: Optional[float] = None
@@ -25,9 +22,6 @@ class PriceGapByGenre(BaseModel):
     avg_global_price: Optional[float] = None
     avg_gap: Optional[float] = None
     gap_percent: Optional[float] = None
-
-
-# ─── New ──────────────────────────────────────────────────────────────────────
 
 class GamesByDate(BaseModel):
     """COUNT game GROUP BY updated_at."""
