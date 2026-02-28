@@ -3,13 +3,13 @@ from typing import Optional
 from datetime import datetime
 
 class SyncLogBase(BaseModel):
-    source: str                       # "rawg+cheapshark", "rawg", "cheapshark"
-    records_fetched: int = 0          # total game yang di-fetch dari API
-    records_inserted: int = 0         # game baru yang diinsert ke DB
-    records_updated: int = 0          # game yang diupdate di DB
-    records_skipped: int = 0          # game tidak ditemukan di CheapShark
-    status: str = "success"           # "success" | "error"
-    message: Optional[str] = None     # pesan error jika status = "error"
+    source: str
+    records_fetched: int = 0
+    records_inserted: int = 0
+    records_updated: int = 0
+    records_skipped: int = 0
+    status: str = "success"
+    message: Optional[str] = None
 
 class SyncLogCreate(SyncLogBase):
     """
