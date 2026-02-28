@@ -40,7 +40,6 @@ TableFooter.propTypes = {
   totalPages: PropTypes.number.isRequired,
   goToPage: PropTypes.func.isRequired,
   getPageNumbers: PropTypes.func.isRequired,
-  PAGE_SIZE: PropTypes.number.isRequired,
 };
 
 export default TableFooter;
