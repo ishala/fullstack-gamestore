@@ -11,10 +11,9 @@ import TableHeader from "../components/TableHeader";
 import Pagination from "../components/Pagination";
 import {
   fetchGames,
-  fetchLastSyncGames,
   fetchLastSync,
   deleteGame,
-  syncAllWithPolling,
+  syncWithPolling,
 } from "../utils/network-data";
 
 
@@ -68,7 +67,7 @@ function MainPage() {
   }, [loadData]);
 
   useEffect(() => {
-    fetchLastSyncGames()
+    fetchLastSync()
       .then((log) => {
         if (log?.synced_at)
           setLastSync(new Date(log.synced_at).toLocaleString("id-ID"));
@@ -95,15 +94,11 @@ function MainPage() {
     setCurrentPage(1);
   }, [search, filterGenre, filterRating, filterPrice, filterDate, setCurrentPage]);
 
-<<<<<<< HEAD
-  const handleSyncAll = async () => {
-=======
   // ── Sync handler ───────────────────────────────────────────────────────────
   const handleSync = async () => {
->>>>>>> parent of e9764db (refactor code into more well documented and translation into english)
     setSyncing(true);
     setSyncProgress(null);
-    await syncAllWithPolling({
+    await syncWithPolling({
       intervalMs: 1500,
       onProgress: (status) => setSyncProgress(status.progress),
       onSuccess: async () => {
@@ -164,7 +159,7 @@ function MainPage() {
         activeFilterCount={activeFilterCount}
         clearAllFilters={clearAllFilters}
         lastSync={lastSync}
-        handleSync={handleSyncAll}
+        handleSync={handleSync}
         syncing={syncing}
       />
 
