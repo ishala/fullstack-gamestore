@@ -10,7 +10,7 @@ import {
   fetchSales,
   createSale,
   deleteSale,
-  updateSale
+  updateSale,
 } from "../utils/network-data";
 
 function MyStorePage() {
@@ -33,11 +33,13 @@ function MyStorePage() {
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
-  const { sortKey, sortDir, handleSort, applySorting } = useSort(
-    null,
-    "asc",
+  const { sortKey, sortDir, handleSort, applySorting } = useSort(null, "asc");
+
+  const sortedStoreGames = applySorting(storeGames).filter(
+    (g) =>
+      !searchQuery.trim() ||
+      g.game_name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  const sortedStoreGames = applySorting(storeGames);
 
   const searchRef = useRef(null);
   const searchTimeout = useRef(null);
@@ -63,6 +65,10 @@ function MyStorePage() {
       setLoadingStore(false);
     }
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, setCurrentPage]);
 
   useEffect(() => {
     loadStoreGames();
@@ -192,6 +198,7 @@ function MyStorePage() {
     setEditingId(null);
     setEditPrice("");
   };
+
   return (
     <div className="min-h-screen bg-slate-100 px-8 py-8">
       {/* Header */}
@@ -380,7 +387,7 @@ function MyStorePage() {
                   name: "game_name",
                   genre: "game_genre",
                 }}
-                columns={["created_at","name", "genre", "price"]}
+                columns={["created_at", "name", "genre", "price"]}
                 editingId={editingId}
                 editPrice={editPrice}
                 setEditPrice={setEditPrice}
