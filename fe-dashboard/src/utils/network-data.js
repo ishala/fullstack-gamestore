@@ -1,5 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const API = `${BASE_URL}/api/v1`;
+const SYNC_PAGE_KEY = "sync_next_page"
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 // Fetch API Wrapper
@@ -138,7 +139,22 @@ export async function deleteSale(saleId) {
  * @returns {Promise<{ task_id: string, status: string, message: string }>}
  */
 export async function triggerSync(limit = 40) {
-  return apiFetch(`/sync/games?limit=${limit}`, { method: "POST" });
+  // Ambil page terakhir dari localStorage, default 1
+  const page = parseInt(localStorage.getItem(SYNC_PAGE_KEY) || "1", 10);
+  return apiFetch(`/sync/games?limit=${limit}&page=${page}`, { method: "POST" });
+}
+
+// Panggil ini di onSuccess setelah sync selesai
+export function saveSyncNextPage(nextPage) {
+  localStorage.setItem(SYNC_PAGE_KEY, String(nextPage));
+}
+
+export function getSyncCurrentPage() {
+  return parseInt(localStorage.getItem(SYNC_PAGE_KEY) || "1", 10);
+}
+
+export function resetSyncPage() {
+  localStorage.removeItem(SYNC_PAGE_KEY);
 }
 
 /**

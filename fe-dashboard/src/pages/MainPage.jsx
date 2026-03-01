@@ -14,8 +14,8 @@ import {
   fetchLastSync,
   deleteGame,
   syncWithPolling,
+  saveSyncNextPage,
 } from "../utils/network-data";
-
 
 function MainPage() {
   const [data, setData] = useState([]);
@@ -92,16 +92,28 @@ function MainPage() {
   // Reset ke halaman 1 setiap kali filter/search berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterGenre, filterRating, filterPrice, filterDate, setCurrentPage]);
+  }, [
+    search,
+    filterGenre,
+    filterRating,
+    filterPrice,
+    filterDate,
+    setCurrentPage,
+  ]);
 
   // ── Sync handler ───────────────────────────────────────────────────────────
-  const handleSync = async () => {
+  const handleSync = async (limit = 40) => {
     setSyncing(true);
     setSyncProgress(null);
     await syncWithPolling({
+      limit,
       intervalMs: 1500,
       onProgress: (status) => setSyncProgress(status.progress),
-      onSuccess: async () => {
+      onSuccess: async (result) => {
+        if (result?.next_page) {
+          saveSyncNextPage(result.next_page);
+        }
+
         const log = await fetchLastSync().catch(() => null);
         setLastSync(
           log?.synced_at
@@ -114,7 +126,7 @@ function MainPage() {
         loadData();
       },
       onError: (err) => {
-        setError(`Sync all gagal: ${err.message}`);
+        setError(`Sync gagal: ${err.message}`);
         setSyncing(false);
         setSyncProgress(null);
       },
