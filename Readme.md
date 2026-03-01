@@ -1,6 +1,6 @@
 # 🎮 Game Store App — Dokumentasi Menjalankan Aplikasi
 
-Aplikasi ini menggabungkan data dari **RAWG Video Games Database** dan **CheapShark API** untuk menampilkan katalog game beserta perbandingan harga global vs harga toko.
+Aplikasi ini menggabungkan data dari [**RAWG Video Games Database**](https://rawg.io/apidocs) dan [**CheapShark API**](https://apidocs.cheapshark.com/) untuk menampilkan katalog game beserta perbandingan harga global vs harga toko.
 
 **Stack:** React JS (Frontend) · FastAPI (Backend) · PostgreSQL · Redis · Celery
 
@@ -20,8 +20,7 @@ Pastikan sudah terinstall di mesin kamu:
 ## 1. Git Clone
 
 ```bash
-git clone <url-repository>
-cd <nama-folder-repo>
+git clone https://github.com/ishala/fullstack-gamestore.git
 ```
 
 Setelah clone, pastikan file `.env` sudah ada di root project. Jika belum, buat berdasarkan contoh berikut:
@@ -145,8 +144,57 @@ npm run dev
 Aplikasi berjalan di: `http://localhost:5173`
 
 ---
+## 4. Jalankan Seeder (Opsional)
 
-## 4. Alur Penggunaan Aplikasi
+Seeder digunakan untuk mengisi data **sales** secara otomatis berdasarkan game yang sudah ada di database. Berguna untuk testing atau demo tanpa perlu input manual satu per satu di halaman My Store.
+
+> ⚠️ **Prasyarat:** Pastikan sudah menjalankan **Sync Data** terlebih dahulu (via tombol di UI atau API), karena seeder membaca data dari tabel `games`.
+
+Jalankan di Terminal 1 (Backend) atau terminal baru dengan venv aktif:
+
+```bash
+cd be-dashboard
+
+# Aktifkan virtual environment jika belum aktif
+# Linux/macOS:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Seed semua game yang ada di database
+python -m app.seeders.seed_sales
+
+# Atau batasi jumlah game yang di-seed (misal hanya 10 game pertama)
+python -m app.seeders.seed_sales --max-games 10
+```
+
+Output yang diharapkan:
+
+```
+🎮 Ditemukan 40 game, mulai seeding sales...
+
+  ✅ Seed  — Grand Theft Auto V | 2x sale (ref: $14.99)
+  ✅ Seed  — Elden Ring | 1x sale (ref: $39.99)
+  ✅ Seed  — Cyberpunk 2077 | 3x sale (ref: $19.99)
+  ⏭️  Skip  — Portal 2 (sudah ada 2 sale)
+  ...
+
+──────────────────────────────────────────────────
+✅ Seeding selesai!
+   Sales inserted : 67
+   Games skipped  : 1 (sudah ada datanya)
+──────────────────────────────────────────────────
+```
+
+**Catatan perilaku seeder:**
+- Seeder bersifat **idempotent** — game yang sudah punya data sales akan di-skip, tidak akan duplikat
+- Harga toko (`our_price`) dihitung otomatis berdasarkan harga referensi CheapShark dengan variasi rasio realistis
+- Jika game tidak punya data harga dari CheapShark, harga di-generate berdasarkan genre game
+- Setiap game mendapatkan 1–3 entri sales secara acak
+
+---
+
+## 5. Alur Penggunaan Aplikasi
 
 ### 📡 Step 1 — Sync Data Game
 
