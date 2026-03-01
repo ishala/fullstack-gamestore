@@ -1,4 +1,4 @@
-# 🎮 Game Store App — Dokumentasi Menjalankan Aplikasi
+# 🎮 Game Store App
 
 Aplikasi ini menggabungkan data dari [**RAWG Video Games Database**](https://rawg.io/apidocs) dan [**CheapShark API**](https://apidocs.cheapshark.com/) untuk menampilkan katalog game beserta perbandingan harga global vs harga toko.
 
