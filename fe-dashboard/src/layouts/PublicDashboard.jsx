@@ -65,8 +65,8 @@ function PublicDashboard({ dateRange, summary }) {
       {/* Pie + Column */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <ChartCard
-          title="🎮 Game Distribution by Genre"
-          subtitle="Count of games by genre"
+          title="🎮 Distribusi Game per Genre"
+          subtitle="Jumlah game berdasarkan genre (dari tabel games)"
         >
           {loading ? (
             <Skeleton />
@@ -95,9 +95,16 @@ function PublicDashboard({ dateRange, summary }) {
             </ResponsiveContainer>
           )}
         </ChartCard>
+
+        {/*
+          Column chart menggunakan last_updated dari RAWG.
+          Alasan: last_updated merepresentasikan kapan data masuk ke sistem kita,
+          sehingga "agregasi per tanggal" sesuai kriteria benar-benar mencerminkan
+          aktivitas fetch/update data — bukan tanggal rilis game (bisa bertahun-tahun lalu).
+        */}
         <ChartCard
-          title="📆 Game Updated by Date"
-          subtitle="Count of games updated by date"
+          title="📆 Game Difetch per Tanggal"
+          subtitle="Jumlah game berdasarkan tanggal last_updated dari RAWG"
         >
           {loading ? (
             <Skeleton />
@@ -131,10 +138,16 @@ function PublicDashboard({ dateRange, summary }) {
 
       {/* ── Analitik Tambahan ── */}
       <div>
+        <h2 className="text-lg font-bold text-gray-700 mb-1">
+          📊 Analitik Tambahan
+        </h2>
+        <p className="text-sm text-gray-400 mb-5">
+          Insight lanjutan dari data game publik
+        </p>
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <ChartCard
-            title="💲 Mean of Cheapest Price by Genre"
-            subtitle="Mean of global cheapest price grouped by genre"
+            title="💲 Rata-rata Harga Termurah per Genre"
+            subtitle="Rata-rata price_cheap (CheapShark) dikelompokkan per genre"
           >
             {loading ? (
               <Skeleton />
@@ -173,8 +186,8 @@ function PublicDashboard({ dateRange, summary }) {
           </ChartCard>
 
           <ChartCard
-            title="⭐ Rating Means by Genre"
-            subtitle="Rating means by genre scaled 0-5"
+            title="⭐ Rata-rata Rating per Genre"
+            subtitle="Rata-rata rating RAWG (skala 0–5) per genre"
           >
             {loading ? (
               <Skeleton />
@@ -219,8 +232,8 @@ function PublicDashboard({ dateRange, summary }) {
 
 PublicDashboard.propTypes = {
   dateRange: PropTypes.shape({
-    start: PropTypes.string.isRequired,
-    end: PropTypes.string.isRequired,
+    start: PropTypes.string.isRequired, // format "YYYY-MM-DD"
+    end: PropTypes.string.isRequired, // format "YYYY-MM-DD"
   }),
   summary: PropTypes.shape({
     total_games: PropTypes.number,

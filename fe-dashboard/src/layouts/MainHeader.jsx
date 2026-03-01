@@ -9,7 +9,7 @@ function MainHeader({ search, setSearch, ...restProps }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
       {/* Search */}
-      <SearchField value={search} onChange={setSearch} placeholder="Search game, platforms..." />
+      <SearchField value={search} onChange={setSearch} placeholder="Cari game, platforms..." />
 
       {/* Clear Filters */}
       {activeFilterCount > 0 && (

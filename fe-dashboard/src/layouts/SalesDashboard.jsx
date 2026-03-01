@@ -37,12 +37,17 @@ const GapTooltip = ({ active, payload }) => {
         {d.raw_gap}
       </p>
       <p className="text-gray-400">
-        {d.raw_gap >= 0 ? "Store are more expensive" : "Store are cheaper"}
+        {d.raw_gap >= 0 ? "Toko lebih mahal" : "Toko lebih murah"}
       </p>
     </div>
   );
 };
 
+// =============================================================================
+// VIEW: DATA SALES
+// Sumber: table sales (join games)
+// Chart: Pie (price gap per genre), Column (count per hari), Line (max price per hari)
+// =============================================================================
 function SalesDashboard({ dateRange, summary }) {
   const [gapData, setGapData] = useState([]);
   const [byDate, setByDate] = useState([]);
@@ -161,6 +166,12 @@ function SalesDashboard({ dateRange, summary }) {
           )}
         </ChartCard>
 
+        {/*
+          Line chart dipakai di sini (bukan bar) karena max_price adalah nilai numerik
+          yang lebih mudah dibaca fluktuasinya lewat garis — terlihat naik/turun harga
+          tertinggi setiap harinya.
+          Contoh: tgl 27 Feb ada 2 game ($12 & $3) → ditampilkan $12.
+        */}
         <ChartCard
           title="📈 Fluktuasi Harga Tertinggi per Hari"
           subtitle="Jika ada beberapa game ditambah dalam 1 hari, hanya harga tertinggi (MAX our_price) yang ditampilkan."
@@ -217,8 +228,8 @@ GapTooltip.propTypes = {
 
 SalesDashboard.propTypes = {
   dateRange: PropTypes.shape({
-    start: PropTypes.string.isRequired,
-    end: PropTypes.string.isRequired,
+    start: PropTypes.string.isRequired, // format "YYYY-MM-DD"
+    end: PropTypes.string.isRequired, // format "YYYY-MM-DD"
   }),
   summary: PropTypes.shape({
     total_games: PropTypes.number,

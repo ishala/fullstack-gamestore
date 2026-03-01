@@ -22,13 +22,13 @@ export const cardsInfo = (topGapGenre, summary, genreData, isSales = false) => {
       color: "text-indigo-600",
     },
     {
-      label: "Avg Cheapest Global Price",
+      label: "Avg Global Price",
       value: fmtPrice(summary.avg_global_price),
       icon: "💲",
       color: "text-cyan-600",
     },
     {
-      label: "Most Popular Genre",
+      label: "Genre Terbanyak",
       value: genreData[0]?.name ?? "—",
       icon: "🏆",
       color: "text-amber-600",
@@ -61,7 +61,7 @@ export const cardsInfo = (topGapGenre, summary, genreData, isSales = false) => {
       color: "text-amber-600",
     },
     {
-      label: "Biggest Genre Price Gap",
+      label: "Genre Gap Terbesar",
       value: topGapGenre,
       icon: "📊",
       color: "text-rose-600",

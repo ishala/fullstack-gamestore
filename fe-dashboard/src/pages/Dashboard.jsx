@@ -13,7 +13,7 @@ export default function Dashboard() {
     end: dayjs().format("YYYY-MM-DD"),
   });
 
-  const [viewMode, setViewMode] = useState("public");
+  const [viewMode, setViewMode] = useState("public"); // "public" | "sales"
 
   const [summary, setSummary] = useState({
     total_games: null,
@@ -22,6 +22,7 @@ export default function Dashboard() {
     avg_our_price: null,
   });
 
+  // Summary tidak pakai filter tanggal karena endpoint BE belum support
   useEffect(() => {
     fetchDashboardSummary()
       .then(setSummary)
@@ -41,7 +42,9 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-gray-500 mt-1">
-            {viewMode === "public" ? "Game from Public API" : "Sales Data"}
+            {viewMode === "public"
+              ? "Data game dari API publik (RAWG)"
+              : "Data penjualan toko"}
           </p>
         </div>
 
@@ -55,7 +58,12 @@ export default function Dashboard() {
         </select>
       </div>
 
-      {/* Date Range */}
+      {/* ── DATE RANGE FILTER ──
+          Filter ini di-pass ke PublicDataView dan SalesDataView sebagai prop.
+          Setiap sub-komponen punya useEffect([dateRange]) sehingga
+          semua chart re-fetch otomatis saat tanggal diubah.
+          Default: 1 bulan terakhir sesuai kriteria.
+      ── */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8 flex flex-wrap items-center gap-4">
         <span className="text-sm font-semibold text-gray-600">
           📅 Date Range
@@ -86,14 +94,14 @@ export default function Dashboard() {
           onClick={resetDate}
           className="text-xs text-indigo-500 hover:text-indigo-700 underline"
         >
-          Reset to the last month
+          Reset 1 bulan terakhir
         </button>
         <span className="ml-auto text-xs text-gray-400 italic">
-          Applies to all charts
+          Mempengaruhi seluruh chart
         </span>
       </div>
 
-      {/* ── Content ── */}
+      {/* ── KONTEN ── */}
       {viewMode === "public" ? (
         <PublicDashboard dateRange={dateRange} summary={summary} />
       ) : (
