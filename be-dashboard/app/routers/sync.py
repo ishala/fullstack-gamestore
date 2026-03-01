@@ -1,11 +1,3 @@
-"""
-Router Sync — trigger Celery task & polling status
-
-Endpoint:
-- POST /sync/games        → trigger sync task, return task_id
-- GET  /sync/status/{id}  → cek progress task
-- GET  /sync/last         → last sync log dari DB
-"""
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,20 +15,16 @@ router = APIRouter()
 # Sync games: trigger Celery task untuk sync data game dari RAWG + CheapShark
 @router.post("/games", status_code=202)
 async def trigger_sync_games(
-    limit: int = Query(40, ge=1, le=40, description="Jumlah game yang di-fetch dari RAWG"),
+    limit: int = Query(40, ge=1, le=40),
+    page: int = Query(1, ge=1)
 ):
-    """
-    Trigger sync game di background (Celery).
-    Return task_id untuk polling progress.
-    HTTP 202 Accepted — request diterima, proses berjalan di background.
-    """
     from app.tasks import sync_games_task
-    task = sync_games_task.delay(limit=limit)
+    task = sync_games_task.delay(limit=limit, page=page)
 
     return {
         "task_id": task.id,
         "status": "queued",
-        "message": f"Sync started for {limit} games. Poll /sync/status/{task.id} for progress.",
+        "message": f"Sync started for {limit} games on page {page}.",
     }
 
 
