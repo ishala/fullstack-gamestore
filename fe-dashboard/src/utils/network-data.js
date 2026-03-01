@@ -57,15 +57,6 @@ export async function deleteGame(gameId) {
     return apiFetch(`/games/${gameId}`, { method: "DELETE" });
 }
 
-/**
- * Ambil last sync dari /games/last-sync.
- *
- * @returns {Promise<SyncLog|null>}
- */
-export async function fetchLastSyncGames() {
-  return apiFetch("/games/last-sync");
-}
-
 // ─── Sales CRUD ───────────────────────────────────────────────────────────────
 
 /**
@@ -98,16 +89,6 @@ export async function fetchSales({
   if (genre) qs.set("genre", genre);
 
   return apiFetch(`/sales?${qs.toString()}`);
-}
-
-/**
- * Ambil satu sale berdasarkan ID.
- *
- * @param {number} saleId
- * @returns {Promise<Sale>}
- */
-export async function fetchSaleById(saleId) {
-  return apiFetch(`/sales/${saleId}`);
 }
 
 /**
@@ -233,57 +214,6 @@ export async function syncWithPolling({
         } else if (status.state === "FAILURE") {
           clearInterval(timer);
           onError?.(new Error(status.message ?? "Sync gagal"));
-          resolve();
-        }
-      } catch (err) {
-        clearInterval(timer);
-        onError?.(err);
-        resolve();
-      }
-    }, intervalMs);
-  });
-}
-
-/**
- * Trigger sinkronisasi SEMUA game dari RAWG (loop pagination, tanpa limit).
- * Gunakan pollSyncStatus untuk memantau progress-nya.
- *
- * @returns {Promise<{ task_id: string, status: string, message: string }>}
- */
-export async function triggerSyncAll() {
-  return apiFetch("/sync/games/all", { method: "POST" });
-}
-
-/**
- * Sync semua game + polling otomatis sampai selesai.
- */
-export async function syncAllWithPolling({
-  intervalMs = 1500,
-  onProgress,
-  onSuccess,
-  onError,
-} = {}) {
-  let taskId;
-  try {
-    const triggered = await triggerSyncAll();
-    taskId = triggered.task_id;
-  } catch (err) {
-    onError?.(err);
-    return;
-  }
-
-  return new Promise((resolve) => {
-    const timer = setInterval(async () => {
-      try {
-        const status = await pollSyncStatus(taskId);
-        onProgress?.(status);
-        if (status.state === "SUCCESS") {
-          clearInterval(timer);
-          onSuccess?.(status);
-          resolve();
-        } else if (status.state === "FAILURE") {
-          clearInterval(timer);
-          onError?.(new Error(status.message ?? "Sync all gagal"));
           resolve();
         }
       } catch (err) {
