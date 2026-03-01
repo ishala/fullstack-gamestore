@@ -1,11 +1,14 @@
-from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
+
+from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
 
 class Sale(Base):
-    """Data penjualan toko sendiri — CRUD manual"""
     __tablename__ = "sales"
+    __table_args__ = (
+        UniqueConstraint("game_id", name="sales_game_id_unique"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     game_id = Column(Integer, ForeignKey("games.id"), nullable=False)

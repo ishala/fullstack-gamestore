@@ -40,7 +40,7 @@ FALLBACK_PRICE_RANGES_BY_GENRE = {
 }
 
 # Jumlah sale per game (min, max)
-SALES_PER_GAME = (1, 3)
+SALES_PER_GAME = (1, 1)
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────
@@ -147,22 +147,21 @@ def seed_sales(max_games: int = None) -> None:
                 continue
 
             # Buat 1-3 sale per game
-            num_sales = random.randint(*SALES_PER_GAME)
-            for _ in range(num_sales):
-                our_price = _get_our_price(game)
-                created_at, updated_at = _generate_timestamps()
-
-                db.add(Sale(
-                    game_id=game.id,
-                    our_price=our_price,
-                    created_at=created_at,
-                    updated_at=updated_at
-                ))
+            
+            our_price = _get_our_price(game)
+            created_at, updated_at = _generate_timestamps()
+            
+            db.add(Sale(
+                game_id=game.id,
+                our_price=our_price,
+                created_at=created_at,
+                updated_at=updated_at
+            ))
 
             price_ref = game.price_cheap or game.price_external
             ref_str = f"(ref: ${price_ref:.2f})" if price_ref else "(no ref, fallback)"
-            print(f"  ✅ Seed  — {game.name} | {num_sales}x sale {ref_str}")
-            total_inserted += num_sales
+            print(f"  ✅ Seed  — {game.name} {ref_str} → our_price: ${our_price:.2f}")
+            total_inserted += 1
 
         db.commit()
 
