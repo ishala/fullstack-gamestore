@@ -21,3 +21,6 @@ be-dashboard/alembic/**/__pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Utils
+.env
