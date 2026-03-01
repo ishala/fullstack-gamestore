@@ -1,5 +1,5 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
@@ -75,6 +75,33 @@ def _get_our_price(game: Game) -> float:
         )
         return _round_price(random.uniform(*price_range))
 
+def _random_datetime_within_days(days_back: int = 90) -> datetime:
+    """Generate datetime random dalam X hari terakhir."""
+    now = datetime.utcnow()
+    random_days = random.randint(0, days_back)
+    random_seconds = random.randint(0, 86400)
+    return now - timedelta(days=random_days, seconds=random_seconds)
+
+
+def _generate_timestamps() -> tuple[datetime, datetime]:
+    """
+    Generate kombinasi created_at dan updated_at yang realistis.
+    """
+    created_at = _random_datetime_within_days(90)
+
+    # 70% kemungkinan tidak pernah diupdate
+    if random.random() < 0.7:
+        updated_at = created_at
+    else:
+        # Updated 0-14 hari setelah dibuat
+        delta_days = random.randint(0, 14)
+        delta_seconds = random.randint(0, 86400)
+        updated_at = created_at + timedelta(days=delta_days, seconds=delta_seconds)
+
+        # Jangan melebihi waktu sekarang
+        updated_at = min(updated_at, datetime.utcnow())
+
+    return created_at, updated_at
 
 # ── Main Seeder ───────────────────────────────────────────────────────────────
 
@@ -123,9 +150,13 @@ def seed_sales(max_games: int = None) -> None:
             num_sales = random.randint(*SALES_PER_GAME)
             for _ in range(num_sales):
                 our_price = _get_our_price(game)
+                created_at, updated_at = _generate_timestamps()
+
                 db.add(Sale(
                     game_id=game.id,
                     our_price=our_price,
+                    created_at=created_at,
+                    updated_at=updated_at
                 ))
 
             price_ref = game.price_cheap or game.price_external
