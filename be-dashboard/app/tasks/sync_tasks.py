@@ -1,6 +1,6 @@
 import asyncio
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime
 from celery import Task
 from sqlalchemy import create_engine, select, delete as sa_delete
 from sqlalchemy.orm import sessionmaker
@@ -33,67 +33,57 @@ def _get_sync_session():
     max_retries=3,
     default_retry_delay=60,
 )
-def sync_games_task(self: Task, limit: int = 40) -> dict:
+def sync_games_task(self: Task, limit: int = 40, page: int = 1) -> dict:
     """
     Celery task untuk sync game dari RAWG + CheapShark.
     State: PENDING → STARTED → PROGRESS (per game) → SUCCESS / FAILURE
     """
+    from app.models.game import Game
+    from app.models.sale import Sale
+    from app.models.sync_log import SyncLog
 
-    async def _fetch_all(limit: int) -> tuple[int, int, int, list[dict]]:
-        """Async: fetch dari RAWG + CheapShark, return merged rows."""
-        fetched = skipped = 0
+    async def _fetch_all(limit: int, page: int) -> tuple[int, int, int, list[dict]]:
+        fetched = skipped = already_exists = 0
+        merged_rows = []
 
         self.update_state(
             state="STARTED",
-            meta={
-                "current": 0,
-                "total": limit,
-                "inserted": 0,
-                "updated": 0,
-                "skipped": 0,
-                "message": "Fetching games from RAWG...",
-            },
+            meta={"current": 0, "total": limit, "skipped": 0, "message": f"Fetching page {page} from RAWG..."},
         )
 
-        timeout = limit * CHEAPSHARK_REQUEST_DELAY + 75 + 30
-        merged_rows = []
+        SessionLocal = _get_sync_session()
+        with SessionLocal() as db:
+            existing_ids = set(row[0] for row in db.execute(select(Game.id)).fetchall())
 
+        timeout = limit * CHEAPSHARK_REQUEST_DELAY + 75 + 30
         async with httpx.AsyncClient(timeout=timeout) as client:
-            raw_games = await _fetch_rawg_games(client, limit)
+            raw_games = await _fetch_rawg_games(client, limit, page=page)
             fetched = len(raw_games)
 
             for i, raw in enumerate(raw_games, start=1):
                 rawg_data = _slice_rawg(raw)
-
                 self.update_state(
                     state="PROGRESS",
-                    meta={
-                        "current": i,
-                        "total": fetched,
-                        "inserted": 0,
-                        "updated": 0,
-                        "skipped": skipped,
-                        "message": f"Processing: {rawg_data['name']}",
-                    },
+                    meta={"current": i, "total": fetched, "skipped": skipped, "message": f"Processing: {rawg_data['name']}"},
                 )
+
+                if rawg_data["id"] in existing_ids:
+                    already_exists += 1
+                    skipped += 1
+                    continue
 
                 await asyncio.sleep(CHEAPSHARK_REQUEST_DELAY)
                 cs_data = await _fetch_cheapshark_price(client, rawg_data["name"])
-
                 if cs_data is None:
                     skipped += 1
                     continue
 
                 merged_rows.append(_merge_row(rawg_data, cs_data))
 
-        return fetched, skipped, merged_rows
+        return fetched, skipped, already_exists, merged_rows
 
     def _upsert(merged_rows: list[dict], fetched: int, skipped: int) -> tuple[int, int]:
         """Sync: upsert rows ke DB menggunakan psycopg2."""
-        from app.models.game import Game
-        from app.models.sale import Sale
-        from app.models.sync_log import SyncLog
-
         inserted = updated = 0
         SessionLocal = _get_sync_session()
 
@@ -138,7 +128,7 @@ def sync_games_task(self: Task, limit: int = 40) -> dict:
 
     try:
         # Step 1-3: async fetch
-        fetched, skipped, merged_rows = asyncio.run(_fetch_all(limit))
+        fetched, skipped, already_exists, merged_rows = asyncio.run(_fetch_all(limit, page))
 
         # Step 4: sync upsert ke DB
         inserted, updated = _upsert(merged_rows, fetched, skipped)
@@ -148,15 +138,14 @@ def sync_games_task(self: Task, limit: int = 40) -> dict:
             "records_inserted": inserted,
             "records_updated": updated,
             "records_skipped": skipped,
+            "records_already_exist": already_exists,
+            "next_page": page + 1,
             "status": "success",
         }
 
     except Exception as exc:
         # Catat SyncLog error
         try:
-            from app.models.game import Game
-            from app.models.sale import Sale
-            from app.models.sync_log import SyncLog
             SessionLocal = _get_sync_session()
             with SessionLocal() as db:
                 db.add(SyncLog(
